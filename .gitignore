@@ -1,0 +1,9 @@
+dist/
+__pycache__/
+*.pyc
+.terraform/
+*.tfstate*
+.env
+evals/results/
+node_modules/
+.claude/settings.local.json

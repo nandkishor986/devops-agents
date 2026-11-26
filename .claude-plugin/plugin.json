@@ -1,0 +1,42 @@
+{
+  "name": "devops-agents",
+  "displayName": "DevOps Agents (upinclouds)",
+  "version": "1.9.1",
+  "description": "Token-lean Terraform (Azure-first), Kubernetes, Docker and FinOps subagents with persistent memory, official MCP servers, a typed report contract and a destructive-command guard.",
+  "author": {
+    "name": "Nandu",
+    "url": "https://github.com/nandkishor986"
+  },
+  "repository": "https://github.com/nandkishor986/devops-agents",
+  "license": "MIT",
+  "keywords": [
+    "devops",
+    "terraform",
+    "azure",
+    "kubernetes",
+    "docker",
+    "finops",
+    "devsecops",
+    "code-review"
+  ],
+  "privacyPolicyUrl": "https://www.drawio.com/privacy",
+  "userConfig": {
+    "currency": {
+      "type": "string",
+      "title": "Cost currency",
+      "description": "Currency for FinOps estimates and reports (Azure Retail Prices API currency code). Change any time in /config.",
+      "options": [
+        "INR",
+        "USD",
+        "EUR",
+        "GBP",
+        "AUD",
+        "CAD",
+        "JPY",
+        "SGD",
+        "AED"
+      ],
+      "default": "INR"
+    }
+  }
+}

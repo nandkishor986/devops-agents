@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "devops-agents/report.v1",
+  "title": "AgentReport",
+  "description": "Typed contract every DevOps subagent returns as its FINAL message. Compact by design: no prose outside `summary`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v",
+    "agent",
+    "task",
+    "status",
+    "summary",
+    "findings"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "agent": {
+      "enum": [
+        "terraform",
+        "k8s",
+        "docker",
+        "finops",
+        "devops"
+      ]
+    },
+    "task": {
+      "enum": [
+        "review",
+        "implement",
+        "troubleshoot",
+        "setup",
+        "explain"
+      ]
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "WARN",
+        "FAIL",
+        "DONE",
+        "BLOCKED"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sev",
+          "file",
+          "issue",
+          "fix"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(TF|K8S|DKR|FIN)-(SEC|REL|COST|MNT|COR|PERF|OPS)-[0-9]{3}$"
+          },
+          "sev": {
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO"
+            ]
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "issue": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "fix": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "monthly_saving_usd": {
+            "type": "number",
+            "minimum": 0,
+            "description": "FinOps only: estimated monthly saving"
+          }
+        }
+      }
+    },
+    "root_cause": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20
+    },
+    "needs_approval": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Mutating commands the agent did NOT run and wants the human to approve."
+    },
+    "next": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 160
+      },
+      "maxItems": 5
+    },
+    "est_monthly_saving_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cmd",
+        "passed"
+      ],
+      "properties": {
+        "cmd": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        }
+      },
+      "description": "Proof the change works: last verification command (docker-verify, terraform validate/plan, kubectl --dry-run=server/kubeconform)."
+    }
+  }
+}

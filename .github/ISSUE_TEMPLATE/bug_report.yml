@@ -1,0 +1,21 @@
+name: Bug report
+description: Something an agent, script, hook, the HUD or an extension did wrong
+labels: [bug]
+body:
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options: [Claude Code plugin (CLI), Claude Code in VS Code, Claude Desktop, GitHub Copilot, VS Code extension, HUD popup, other]
+    validations: { required: true }
+  - type: input
+    id: agent
+    attributes: { label: "Agent / command", placeholder: "terraform-engineer, /devops-agents:team, tf-scan.sh …" }
+  - type: textarea
+    id: what
+    attributes: { label: What happened and what you expected, description: "Include the AgentReport or error text. Remove secrets, IDs, IPs and hostnames." }
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes: { label: Environment, placeholder: "OS, plugin version (claude plugin list), Claude Code version" }
+    validations: { required: true }

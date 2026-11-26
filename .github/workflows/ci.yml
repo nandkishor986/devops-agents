@@ -1,0 +1,40 @@
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: sudo apt-get install -y graphviz shellcheck && pip install diagrams python-hcl2
+      - run: python -m unittest discover -s tests -v
+      - run: shellcheck -S warning scripts/*.sh install.sh tests/*.sh extensions/build.sh
+      - name: Price lookup (offline, canned API)
+        run: bash tests/az_price_test.sh
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: VS Code extension tests
+        run: node extensions/vscode/test/parse.test.js && node extensions/vscode/test/activate.test.js
+      - name: Build extensions (.mcpb + .vsix)
+        run: bash extensions/build.sh
+      - uses: actions/upload-artifact@v4
+        with: { name: extensions, path: dist/ }
+      - name: Docker diagnose→fix→verify loop (real containers)
+        run: BASE=busybox:1.37 bash tests/docker_fix_loop.sh
+      - name: JSON files parse
+        run: for f in .mcp.json .claude-plugin/*.json hooks/hooks.json contracts/*.json examples/*.json; do python -m json.tool "$f" >/dev/null; done
+      - name: Agent memory budget (frontmatter + body < 120 lines each)
+        run: for f in agents/*.md skills/*/SKILL.md; do n=$(wc -l < "$f"); [ "$n" -lt 120 ] || { echo "$f too long ($n)"; exit 1; }; done
+
+  test-windows:
+    # the HUD, Git Bash/WSL handling and python3-stub fallbacks are Windows-specific
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install python-hcl2
+      - run: python -m unittest discover -s tests -v

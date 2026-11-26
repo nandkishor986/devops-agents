@@ -1,0 +1,54 @@
+{
+  "name": "devops-agents",
+  "displayName": "DevOps Agents (upinclouds)",
+  "description": "Terraform (Azure), Kubernetes, Docker and FinOps scanners with findings in the Problems panel, Docker build→run→diagnose, INR Azure pricing and official-icon Azure diagrams. Works with or without Claude Code.",
+  "version": "1.9.1",
+  "publisher": "upinclouds",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/nandkishor986/devops-agents" },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters", "Other"],
+  "keywords": ["terraform", "azure", "kubernetes", "docker", "finops", "devsecops"],
+  "main": "./src/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": { "activitybar": [ { "id": "devopsAgents", "title": "DevOps Agents", "icon": "$(server-process)" } ] },
+    "views": { "devopsAgents": [ { "id": "devopsAgents.actions", "name": "Actions" } ] },
+    "commands": [
+      { "command": "devopsAgents.tfScan", "title": "Terraform: Scan Folder", "category": "DevOps Agents" },
+      { "command": "devopsAgents.tfCost", "title": "Terraform: Cost (Infracost)", "category": "DevOps Agents" },
+      { "command": "devopsAgents.k8sManifests", "title": "Kubernetes: Review Manifests", "category": "DevOps Agents" },
+      { "command": "devopsAgents.k8sTriage", "title": "Kubernetes: Triage Cluster (read-only)", "category": "DevOps Agents" },
+      { "command": "devopsAgents.dockerAudit", "title": "Docker: Audit Dockerfile", "category": "DevOps Agents" },
+      { "command": "devopsAgents.dockerVerify", "title": "Docker: Build → Run → Diagnose", "category": "DevOps Agents" },
+      { "command": "devopsAgents.finopsScan", "title": "FinOps: Waste Scan", "category": "DevOps Agents" },
+      { "command": "devopsAgents.price", "title": "FinOps: Azure Price Lookup", "category": "DevOps Agents" },
+      { "command": "devopsAgents.diagramFromTf", "title": "Diagram: Spec from Terraform", "category": "DevOps Agents" },
+      { "command": "devopsAgents.diagram", "title": "Diagram: Render Spec", "category": "DevOps Agents" },
+      { "command": "devopsAgents.checkCommand", "title": "Check Command Safety", "category": "DevOps Agents" },
+      { "command": "devopsAgents.clear", "title": "Clear Findings", "category": "DevOps Agents" }
+    ],
+    "menus": {
+      "explorer/context": [
+        { "command": "devopsAgents.tfScan", "when": "explorerResourceIsFolder", "group": "devopsAgents@1" },
+        { "command": "devopsAgents.k8sManifests", "when": "explorerResourceIsFolder", "group": "devopsAgents@2" },
+        { "command": "devopsAgents.tfCost", "when": "explorerResourceIsFolder", "group": "devopsAgents@3" },
+        { "command": "devopsAgents.diagramFromTf", "when": "explorerResourceIsFolder", "group": "devopsAgents@4" },
+        { "command": "devopsAgents.dockerAudit", "when": "resourceFilename =~ /Dockerfile/", "group": "devopsAgents@1" },
+        { "command": "devopsAgents.dockerVerify", "when": "resourceFilename =~ /Dockerfile/", "group": "devopsAgents@2" },
+        { "command": "devopsAgents.diagram", "when": "resourceExtname == .json", "group": "devopsAgents@5" }
+      ],
+      "editor/context": [ { "command": "devopsAgents.checkCommand", "when": "editorHasSelection", "group": "devopsAgents@1" } ]
+    },
+    "configuration": {
+      "title": "DevOps Agents",
+      "properties": {
+        "devopsAgents.currency": { "type": "string", "default": "INR", "enum": ["INR", "USD", "EUR", "GBP", "AUD", "CAD", "JPY", "SGD", "AED"], "description": "Currency for price lookups and FinOps output." },
+        "devopsAgents.defaultRegion": { "type": "string", "default": "eastus2", "description": "Default Azure region for price lookups." },
+        "devopsAgents.bashPath": { "type": "string", "default": "", "description": "Path to bash (Windows: Git Bash). Empty = auto-detect." },
+        "devopsAgents.pythonPath": { "type": "string", "default": "", "description": "Python command. Empty = python (Windows) / python3." },
+        "devopsAgents.terraformInit": { "type": "boolean", "default": false, "description": "Run terraform init -backend=false before validate (downloads providers)." }
+      }
+    }
+  }
+}

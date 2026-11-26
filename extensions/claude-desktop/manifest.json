@@ -1,0 +1,71 @@
+{
+  "manifest_version": "0.3",
+  "name": "devops-agents",
+  "display_name": "DevOps Agents (upinclouds)",
+  "version": "1.9.1",
+  "description": "Terraform (Azure), Kubernetes, Docker and FinOps tools for Claude Desktop: scans, Docker fix-loop diagnostics, INR Azure pricing, official-icon Azure diagrams.",
+  "long_description": "Runs the DevOps Agents toolkit's scanners on YOUR machine as MCP tools: tf_scan, k8s_triage (read-only), docker_audit, docker_verify (build → run → health → DIAG codes), finops_scan (az login), az_price (Azure Retail Prices in INR, no login), azure_diagram (.drawio/PNG with official Azure icons), validate_report and check_command. Paths are restricted to the workspace folder you choose; scripts run with argument arrays, never through a shell string.",
+  "author": { "name": "Nandu", "url": "https://github.com/nandkishor986" },
+  "repository": { "type": "git", "url": "https://github.com/nandkishor986/devops-agents" },
+  "license": "MIT",
+  "keywords": ["devops", "terraform", "azure", "kubernetes", "docker", "finops", "inr"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "DEVOPS_WORKSPACE": "${user_config.workspace}",
+        "DEVOPS_CURRENCY": "${user_config.currency}",
+        "DEVOPS_BASH": "${user_config.bash_path}",
+        "DEVOPS_PYTHON": "${user_config.python_path}",
+        "DEVOPS_CLIENT": "Claude Desktop"
+      }
+    }
+  },
+  "tools": [
+    { "name": "tf_scan", "description": "Terraform scan: fmt, validate, tflint, trivy/checkov, AST checks, rule-ID findings" },
+    { "name": "k8s_triage", "description": "Read-only Kubernetes triage or static manifest review" },
+    { "name": "docker_audit", "description": "Dockerfile / image / container security + efficiency audit" },
+    { "name": "docker_verify", "description": "Build, run, wait for health, print DIAG codes and fix hints" },
+    { "name": "finops_scan", "description": "Azure waste, Advisor, budgets, actual cost; Infracost; AKS rightsizing" },
+    { "name": "az_price", "description": "Azure Retail Prices lookup in INR (or any currency), presets + fx" },
+    { "name": "azure_diagram", "description": "Official-Azure-icon diagrams: spec from Terraform, render drawio/png/svg" },
+    { "name": "validate_report", "description": "Type-check an AgentReport v1 JSON" },
+    { "name": "check_command", "description": "Guard rules: deny / ask / allow for a shell command" }
+  ],
+  "user_config": {
+    "workspace": {
+      "type": "directory",
+      "title": "Workspace folder",
+      "description": "Folder with your Terraform / manifests / Dockerfiles. Tools can only read or write inside it.",
+      "required": true
+    },
+    "currency": {
+      "type": "string",
+      "title": "Cost currency",
+      "description": "3-letter code for prices (Azure Retail Prices API), e.g. INR, USD, EUR.",
+      "default": "INR",
+      "required": false
+    },
+    "bash_path": {
+      "type": "string",
+      "title": "Bash path (Windows: Git Bash)",
+      "description": "Leave empty to auto-detect (C:\\Program Files\\Git\\bin\\bash.exe on Windows).",
+      "default": "",
+      "required": false
+    },
+    "python_path": {
+      "type": "string",
+      "title": "Python command",
+      "description": "Leave empty for python (Windows) / python3 (macOS, Linux).",
+      "default": "",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": { "node": ">=18.0.0" }
+  }
+}
