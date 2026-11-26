@@ -1,0 +1,11 @@
+name: Feature or new rule
+description: A new check, agent capability, cloud/tool support or lesson
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Problem, description: "What should the agents catch or do that they don't today?" }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposal, description: "Rule ID idea (e.g. TF-SEC-0xx), sample bad/good code, or the workflow you want." }

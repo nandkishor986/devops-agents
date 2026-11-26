@@ -1,0 +1,11 @@
+{
+  "name": "upinclouds",
+  "owner": { "name": "Nandu" },
+  "plugins": [
+    {
+      "name": "devops-agents",
+      "source": "./",
+      "description": "Terraform (Azure), Kubernetes, Docker and FinOps agents + skills, official MCPs, persistent memory."
+    }
+  ]
+}

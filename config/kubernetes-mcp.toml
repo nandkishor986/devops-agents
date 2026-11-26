@@ -1,0 +1,9 @@
+# kubernetes-mcp-server >= 0.1 reads settings from TOML (the --read-only flag was removed in 0.1.0).
+read_only = true
+toolsets = ["core", "config", "helm"]
+
+# never let the agent read Secret values
+[[denied_resources]]
+group = ""
+version = "v1"
+kind = "Secret"

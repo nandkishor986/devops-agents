@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: k8s-review-flags-privileged
+tags: [smoke, k8s]
+context:
+  scaffold_script: scaffold.sh

@@ -1,0 +1,39 @@
+{
+  "title": "Hub-spoke AKS baseline",
+  "direction": "LR",
+  "groups": [
+    {"id": "sub", "label": "Prod subscription", "kind": "subscription", "children": [
+      {"id": "hub", "label": "Hub VNet 10.0.0.0/16", "kind": "vnet", "nodes": ["fw", "bastion", "dns"]},
+      {"id": "spoke", "label": "Spoke VNet 10.1.0.0/16", "kind": "vnet", "children": [
+        {"id": "snagw", "label": "snet-agw", "kind": "subnet", "nodes": ["agw"]},
+        {"id": "snaks", "label": "snet-aks", "kind": "subnet", "nodes": ["aks"]},
+        {"id": "snpe", "label": "snet-pe", "kind": "subnet", "nodes": ["pe_kv", "pe_acr"]}
+      ]},
+      {"id": "shared", "label": "rg-shared", "kind": "rg", "nodes": ["kv", "acr", "law"]}
+    ]}
+  ],
+  "nodes": [
+    {"id": "users", "type": "users", "label": "Users"},
+    {"id": "fw", "type": "firewall", "label": "afw-hub"},
+    {"id": "bastion", "type": "bastion", "label": "bas-hub"},
+    {"id": "dns", "type": "dns", "label": "privatelink zones"},
+    {"id": "agw", "type": "appgw", "label": "agw-prod (WAF)"},
+    {"id": "aks", "type": "aks", "label": "aks-prod"},
+    {"id": "pe_kv", "type": "pe", "label": "pe-kv"},
+    {"id": "pe_acr", "type": "pe", "label": "pe-acr"},
+    {"id": "kv", "type": "keyvault", "label": "kv-prod"},
+    {"id": "acr", "type": "acr", "label": "acrprod"},
+    {"id": "law", "type": "loganalytics", "label": "law-prod"},
+    {"id": "ado", "type": "pipelines", "label": "Azure DevOps"}
+  ],
+  "edges": [
+    {"from": "users", "to": "agw", "label": "HTTPS"},
+    {"from": "agw", "to": "aks", "label": "443"},
+    {"from": "aks", "to": "fw", "label": "egress UDR", "style": "dashed"},
+    {"from": "aks", "to": "pe_kv", "label": "CSI / WI"},
+    {"from": "aks", "to": "pe_acr", "label": "AcrPull"},
+    {"from": "pe_kv", "to": "kv"}, {"from": "pe_acr", "to": "acr"},
+    {"from": "aks", "to": "law", "style": "dotted", "label": "logs"},
+    {"from": "ado", "to": "acr", "label": "push (OIDC)", "style": "dashed"}
+  ]
+}

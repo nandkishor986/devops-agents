@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+cur=USD; for a in "$@"; do [[ "$a" == currencyCode=* ]] && cur=$(echo "$a" | tr -d "'" | cut -d= -f2); done
+if [[ $cur == INR ]]; then pe=0.9523; gb=0.9523; else pe=0.01; gb=0.01; fi
+cat <<J
+{"Items":[{"armRegionName":"Global","productName":"Virtual Network Private Link","skuName":"Standard","meterName":"Standard Private Endpoint","unitOfMeasure":"1 Hour","retailPrice":$pe,"tierMinimumUnits":0.0,"type":"Consumption","currencyCode":"$cur"},
+{"armRegionName":"Global","productName":"Virtual Network Private Link","skuName":"Standard","meterName":"Standard Data Processed - Ingress","unitOfMeasure":"1 GB","retailPrice":$gb,"tierMinimumUnits":0.0,"type":"Consumption","currencyCode":"$cur"}],"NextPageLink":null}
+J

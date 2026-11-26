@@ -1,0 +1,22 @@
+# Failure playbook (symptom → cheapest discriminating checks → usual fixes)
+
+| Symptom | Check (in order) | Typical root cause → fix |
+|---|---|---|
+| **Pending** | events: `FailedScheduling` text | `Insufficient cpu/memory` → requests too high or pool full → right-size / autoscaler max / new pool. `node(s) had untolerated taint` → add toleration or nodeSelector fix. `didn't match pod topology spread` → `whenUnsatisfiable: ScheduleAnyway` or more zones. `unbound PVC` → see PVC row |
+| **PVC Pending** | `kubectl describe pvc` events, StorageClass `volumeBindingMode` | WaitForFirstConsumer is normal until pod schedules; zone mismatch for Azure Disk (LRS is zonal) → use ZRS SC or zone-pin; CSI driver/identity lacks permission on node RG |
+| **ImagePullBackOff / ErrImagePull** | event message | `401/unauthorized` → AKS kubelet identity lacks `AcrPull` on ACR (`az aks check-acr`) or wrong imagePullSecret. `not found` → tag typo / wrong registry / arch (arm64 vs amd64 manifest). `i/o timeout` → egress/firewall/private ACR DNS |
+| **CrashLoopBackOff** | `--previous` logs, `lastState.terminated.exitCode` | exit 1/2 → app config (missing env/secret/CM key — check `CreateContainerConfigError` too). exit 126/127 → bad entrypoint / missing binary / wrong arch. exit 137 → OOMKilled (see below) or liveness kill. exit 143 → SIGTERM (liveness/probe or eviction). Immediate exit 0 → process daemonises / no foreground |
+| **OOMKilled (137)** | `lastState.terminated.reason`, limits vs `kubectl top` | limit too low or memory leak; JVM/Node not container-aware (`-XX:MaxRAMPercentage=75`, `--max-old-space-size`) → raise limit to p99+headroom, set request=limit for memory |
+| **Running but not Ready** | readiness probe path/port, events `Readiness probe failed` | wrong port/name, app binds 127.0.0.1 instead of 0.0.0.0, slow start → add startupProbe; dependency down (don't put deps in liveness!) |
+| **Restarts with no crash logs** | events `Liveness probe failed` | liveness too aggressive (timeoutSeconds 1 under load) → separate liveness (cheap) from readiness, raise timeout/failureThreshold, add startupProbe |
+| **Service unreachable** | endpoints empty? (`kubectl get endpoints svc`) | selector ≠ pod labels (K8S-COR-001), targetPort mismatch / named port typo (K8S-COR-003), pods not Ready, NetworkPolicy blocking (check ingress policies in target ns) |
+| **DNS failures** | `kubectl run -it --rm dnsutils --image=registry.k8s.io/e2e-test-images/agnhost:2.39 -- nslookup <svc>.<ns>.svc.cluster.local` | CoreDNS pods unhealthy/throttled; custom DNS on VNet not forwarding to 168.63.129.16; ndots:5 latency → FQDN with trailing dot or `dnsConfig.options ndots:2` |
+| **Ingress 502/503/504** | ingress controller logs for the host, backend endpoints | 502: backend port/protocol (HTTP vs HTTPS) mismatch; 503: no ready endpoints; 504: timeout annotations; App Gateway (AGIC): health probe path must return 200 — set `appgw.ingress.kubernetes.io/health-probe-path` |
+| **Evicted** | `status.reason`, node conditions | DiskPressure (image/log growth → ephemeral-storage limits, log rotation), MemoryPressure (BestEffort pods evicted first → set requests) |
+| **Node NotReady** | node conditions, `kubectl get events -A --field-selector involvedObject.kind=Node` | kubelet/containerd down, VMSS instance issue → AKS: `az aks nodepool` reimage/upgrade (needs approval); check node-problem-detector events |
+| **HPA not scaling** | `kubectl describe hpa` conditions | metrics-server missing / no CPU requests on pods (HPA % needs requests) / `unable to fetch metrics` |
+| **Forbidden (RBAC)** | `kubectl auth can-i <verb> <res> --as=system:serviceaccount:<ns>:<sa> -n <ns>` | missing Role/RoleBinding or binding in wrong ns; AKS Entra: user lacks Azure RBAC role (`Azure Kubernetes Service RBAC Reader/Writer`) |
+| **Workload identity token errors** | pod has label `azure.workload.identity/use: "true"`, SA annotation `azure.workload.identity/client-id`, federated credential subject | subject mismatch `system:serviceaccount:<ns>:<sa>`, issuer URL mismatch, label on pod template missing |
+| **Helm upgrade stuck `pending-upgrade`** | `helm history <rel>` | previous upgrade interrupted → `helm rollback <rel> <last-good>` (needs approval) |
+
+Rule: name the root cause in one line (`root_cause`), cite the evidence line, give the minimal file fix. If evidence is inconclusive after 3 hypotheses → status BLOCKED with the next data needed.

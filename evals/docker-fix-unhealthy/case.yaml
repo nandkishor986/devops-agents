@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: docker-fix-unhealthy
+tags: [docker, needs-docker]
+context:
+  scaffold_script: scaffold.sh

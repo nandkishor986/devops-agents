@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# fake aws CLI for offline tests: returns a canned Price List (t3.micro ap-south-1 = 0.0112 USD/h; gp3 = 0.0912 USD/GB-mo)
+args="$*"
+if [[ "$args" == *volumeApiName* ]]; then p=0.0912; u=GB-Mo; else p=0.0112; u=Hrs; fi
+inner=$(printf '{"product":{"attributes":{}},"terms":{"OnDemand":{"X.1":{"priceDimensions":{"X.1.2":{"unit":"%s","pricePerUnit":{"USD":"%s"}},"X.1.3":{"unit":"%s","pricePerUnit":{"USD":"0.0000000000"}}}}}}}' "$u" "$p" "$u")
+jq -n --arg s "$inner" '{PriceList: [$s], FormatVersion: "aws_v1"}'
