@@ -14,7 +14,7 @@ jobs:
       - run: shellcheck -S warning scripts/*.sh install.sh tests/*.sh extensions/build.sh
       - name: Price lookup (offline, canned API)
         run: bash tests/az_price_test.sh
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "22" }
       - name: VS Code extension tests
         run: node extensions/vscode/test/parse.test.js && node extensions/vscode/test/activate.test.js
