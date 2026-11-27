@@ -1,7 +1,7 @@
 {
   "name": "infracortex",
   "displayName": "InfraCortex (upinclouds)",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Token-lean Terraform (Azure-first), Kubernetes, Docker and FinOps subagents with persistent memory, official MCP servers, a typed report contract and a destructive-command guard.",
   "author": {
     "name": "Nandu",

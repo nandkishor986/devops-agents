@@ -4,6 +4,16 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [Unreleased]
 
+## [3.0.0] — one-click VS Code extension
+### Added
+- The VS Code extension sets everything up itself: Copilot custom agents (`chatAgents`: terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, cortex), expert skills (`chatSkills`), and the InfraCortex MCP server (`mcpServerDefinitionProviders`) running on VS Code's own Node — no `mcp.json`, no Node install, no repo commands.
+- *Get started* walkthrough; prerequisite check (status bar) and **Install missing tools** (winget / Homebrew / apt in a visible terminal, after confirmation).
+- **Enable in Claude Code**: one click adds the marketplace and installs (or updates) the plugin via the `claude` CLI or the Claude Code extension's bundled binary.
+- One-time offer to remove the old manually installed Copilot agents / `mcp.json` entry; Marketplace icon and listing.
+### Changed
+- MCP server bundled into one file with esbuild (`.vsix`: 63 files, ~0.6 MB instead of ~3,700 files).
+- Server honours `INFRACORTEX_ROOT`; `make-copilot-agents.py` gains `--root` and `--exclude`.
+
 ## [2.1.0]
 ### Added
 - **CortexWeave** — shared procedural memory: hooks log every agent run (monitor log) and queue the runs worth learning from (failed steps, rejected reports, BLOCKED, very long runs); validated, versioned skill capsules (`skills/<slug>/vN.md`); `search` (descriptions only) and `pull` (full procedure) for every agent; MCP tools `search_skills`, `pull_skill`, `agent_activity` for Copilot / Claude Desktop.

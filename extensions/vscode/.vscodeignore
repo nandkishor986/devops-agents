@@ -1,4 +1,5 @@
 node_modules/**
+!mcp/node_modules/**
 test/**
 **/__pycache__/**
 *.vsix

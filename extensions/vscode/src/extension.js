@@ -83,6 +83,7 @@ function activate(ctx) {
   out = vscode.window.createOutputChannel("InfraCortex");
   diags = vscode.languages.createDiagnosticCollection("infracortex");
   rules = loadRuleSeverities(path.join(root(ctx), "contracts", "RULES.md"));
+  require("./setup").activate(ctx, out);   // one-click layer: Copilot agents/skills, MCP server, prerequisites, Claude Code
   const reg = (id, fn) => ctx.subscriptions.push(vscode.commands.registerCommand(id, async (...a) => {
     try { await fn(...a); } catch (e) { vscode.window.showErrorMessage(`InfraCortex: ${e.message}`); }
   }));
