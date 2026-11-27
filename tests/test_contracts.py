@@ -480,6 +480,30 @@ class CortexWeave(unittest.TestCase):
         meta = json.loads((Path(self.tmp) / "cortexweave/skills/fix-azurerm-missing-location/meta.json").read_text())
         self.assertEqual((meta["versions"], meta["uses"]), ([1, 2], 1))
 
+    def _docker_skill(self, slug: str, description: str, **extra) -> None:
+        self.cw.save({**self.GOOD, "slug": slug, "agents": ["docker-engineer"], "tags": [], "description": description, **extra})
+
+    def test_search_ranks_by_query_and_excludes_mismatches(self):
+        """Competing skills for the same agent, inserted worst-first, so a search that ignored the query
+        (returning index or insertion order after the agent filter) fails every assertion below."""
+        self._docker_skill("docker-image-size-multistage",
+                           "Use when a Docker image is too large: switch to a multi-stage build and a slim base image.")
+        self._docker_skill("docker-healthcheck-port-mismatch",
+                           "Use when a Docker HEALTHCHECK fails because it probes a different port than the app listens on.")
+        self._docker_skill("docker-healthcheck-curl-missing",
+                           "Use when a Docker HEALTHCHECK fails because curl is not in a busybox or alpine image.")
+        self._docker_skill("docker-healthcheck-old-curl-trick",
+                           "Use when a Docker HEALTHCHECK needs curl in busybox — superseded, kept for history only.",
+                           status="deprecated")
+        slugs = [h["slug"] for h in self.cw.search("healthcheck curl busybox", agent="docker-engineer")]
+        self.assertEqual(slugs[0], "docker-healthcheck-curl-missing")                     # best match first
+        self.assertLess(slugs.index("docker-healthcheck-curl-missing"), slugs.index("docker-healthcheck-port-mismatch"))
+        self.assertNotIn("docker-image-size-multistage", slugs)                         # shares no query term
+        self.assertNotIn("docker-healthcheck-old-curl-trick", slugs)                    # deprecated never returned
+        self.assertEqual(self.cw.search("terraform state lock", agent="docker-engineer"), [])  # nothing relevant → empty
+        scores = [h["score"] for h in self.cw.search("healthcheck curl busybox", agent="docker-engineer")]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+
     def test_selector_queues_only_runs_worth_learning(self):
         self.cw.record_run({"run_id": "clean", "agent": "terraform-engineer", "status": "PASS"}, self.transcript(False))
         self.cw.record_run({"run_id": "bad", "agent": "terraform-engineer", "status": "FAIL"}, self.transcript(True))
