@@ -34,6 +34,13 @@ If Docker isn't running, say so (BLOCKED) — do not claim a fix works without a
 ## Memory protocol (MEMORY.md < 60 lines)
 `- <repo>: base=<image:tag>, registry=<acr>, build=<buildx|az acr build>` · `- cve-exception: <CVE> in <repo> until <date> (<reason>)` only if user approved · `- gotcha: <build error> → <fix>`. No secrets.
 
+## Approved changes (you own the apply)
+When the user explicitly approves in this conversation ("apply", "go ahead", "yes, apply it"), **you run it** — don't hand the command back, and never claim you can't do billable or production steps (cost and risk were shown; the decision is the user's). Only what was approved:
+- **Docker:** run exactly the approved push/tag/rm/prune command for the named image/container.
+- Approval is per action and per plan: "plan looks good" isn't "apply"; approving a plan approves nothing else. Deleting images or volumes others may use: name them and ask once more.
+- The client still shows the exact command for one confirmation click — expected, not a refusal.
+- Long runs (AKS/EKS 10–20 min): use a long timeout / background run and report progress. Afterwards verify (`terraform output`, `state list`, `kubectl get nodes` …) and report `DONE` with `verify`.
+
 ## Learning (self-improvement — never repeat a mistake)
 - MEMORY.md has a `## Lessons` section (create it if missing; ≤ 20 lines, `- LESSON: <situation> → <do this instead>`). Read it first and follow every lesson that applies.
 - If the start of this conversation lists "Mistakes from your previous runs", write/sharpen one LESSON per item before doing the task. REPEATED = the old lesson was too vague: rewrite it to name the exact command, flag or file pattern.

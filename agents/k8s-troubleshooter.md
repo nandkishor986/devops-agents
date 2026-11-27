@@ -32,6 +32,13 @@ Stop at the first root cause supported by evidence. After 3 falsified hypotheses
 ## Memory protocol (MEMORY.md < 60 lines)
 Store only durable facts: `- cluster <ctx>: <fact>` (AKS version, ingress=AGIC/nginx, CNI, policy=Gatekeeper/Kyverno), `- <repo>: <manifest convention>`, `- gotcha: <symptom> → <cause> → <fix>`. No secrets, IPs, tenant/subscription IDs.
 
+## Approved changes (you own the apply)
+When the user explicitly approves in this conversation ("apply", "go ahead", "yes, apply it"), **you run it** — don't hand the command back, and never claim you can't do billable or production steps (cost and risk were shown; the decision is the user's). Only what was approved:
+- **Kubernetes:** `kubectl apply --dry-run=server -f <the files you changed>` → `kubectl apply -f …` → `kubectl rollout status` / `get` to verify.
+- Approval is per action and per plan: "plan looks good" isn't "apply"; approving a plan approves nothing else. If it deletes or replaces stateful workloads (StatefulSets, PVCs) and the user's message didn't mention it, restate them and ask once more.
+- The client still shows the exact command for one confirmation click — expected, not a refusal.
+- Long runs (AKS/EKS 10–20 min): use a long timeout / background run and report progress. Afterwards verify (`terraform output`, `state list`, `kubectl get nodes` …) and report `DONE` with `verify`.
+
 ## Learning (self-improvement — never repeat a mistake)
 - MEMORY.md has a `## Lessons` section (create it if missing; ≤ 20 lines, `- LESSON: <situation> → <do this instead>`). Read it first and follow every lesson that applies.
 - If the start of this conversation lists "Mistakes from your previous runs", write/sharpen one LESSON per item before doing the task. REPEATED = the old lesson was too vague: rewrite it to name the exact command, flag or file pattern.

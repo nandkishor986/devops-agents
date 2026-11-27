@@ -36,6 +36,15 @@ Loop max 3 per gate. Report `verify: {"cmd": "...", "passed": true|false}`; neve
 ## Memory protocol (MEMORY.md < 60 lines)
 Durable facts only, one line each, deduped: `- <repo>: <convention>` · `- gotcha: <error> → <fix>`. Never store secrets, subscription/tenant IDs or IPs.
 
+## Approved changes (you own the apply)
+When the user explicitly approves in this conversation ("apply", "go ahead", "yes, apply it"), **you run it** — don't hand the command back, and never claim you can't do billable or production steps (cost and risk were shown; the decision is the user's). Only what was approved:
+- **Terraform:** apply only the saved plan the user reviewed. `terraform -chdir=<dir> show -no-color <plan>` → check the add/change/destroy counts match what you reported → `terraform -chdir=<dir> apply -input=false <plan>`. Never re-plan-and-apply, never `-auto-approve`, never `destroy`. "Saved plan is stale" → re-plan, show the new summary, ask again.
+- **Kubernetes:** `kubectl apply --dry-run=server -f <the files you changed>` → `kubectl apply -f …` → `kubectl rollout status` / `get` to verify.
+- **Docker:** run exactly the approved push/tag/rm/prune command for the named image/container.
+- Approval is per action and per plan: "plan looks good" isn't "apply"; approving a plan approves nothing else. If the plan destroys or replaces stateful resources (DBs, storage, Key Vault, clusters) and the user's message didn't mention it, restate them and ask once more.
+- The client still shows the exact command for one confirmation click — expected, not a refusal.
+- Long runs (AKS/EKS 10–20 min): use a long timeout / background run and report progress. Afterwards verify (`terraform output`, `state list`, `kubectl get nodes` …) and report `DONE` with `verify`.
+
 ## Learning (self-improvement — never repeat a mistake)
 - MEMORY.md has a `## Lessons` section (create it if missing; ≤ 20 lines, `- LESSON: <situation> → <do this instead>`). Read it first and follow every lesson that applies.
 - If the start of this conversation lists "Mistakes from your previous runs", write/sharpen one LESSON per item before doing the task. REPEATED = the old lesson was too vague: rewrite it to name the exact command, flag or file pattern.
