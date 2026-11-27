@@ -811,5 +811,56 @@ class MainConversationHud(unittest.TestCase):
         self.assertEqual((self.card()["status"], self.card()["summary"]), ("done", "Plan ready: 3 to add."))
 
 
+
+class CopilotHud(unittest.TestCase):
+    """Copilot agents report start/step/done through the hud_update MCP tool (no hook API needed)."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.env = dict(os.environ, INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off", DEVOPS_LEARN="off")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def ev(self, **d):
+        base = {"source": "Copilot (VS Code)", "session": "77", "cwd": "C:/work/eks-dev"}
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "agent_events.py")], input=json.dumps({**base, **d}),
+                       text=True, env=self.env, check=True)
+
+    def cards(self):
+        return json.loads((Path(self.tmp) / "hud/state.json").read_text(encoding="utf-8"))["agents"]
+
+    def test_status_lifecycle_and_mcp_steps_fold_into_the_card(self):
+        self.ev(hook_event_name="AgentStatus", agent_type="terraform-expert", phase="start", task="Plan EKS dev cluster")
+        self.ev(hook_event_name="AgentStatus", agent_type="terraform-expert", phase="step", step="terraform plan -out eks.tfplan")
+        self.ev(hook_event_name="McpTool", agent_type="terraform-expert", tool="tf_scan", phase="start")
+        self.ev(hook_event_name="McpTool", agent_type="terraform-expert", tool="tf_scan", phase="end", ok=False)
+        cards = self.cards()
+        self.assertEqual(list(cards), ["copilot:77:terraform-expert"])            # no separate mcp: card
+        c = cards["copilot:77:terraform-expert"]
+        self.assertEqual((c["status"], c["task"], c["project"], c["steps"], c["errors"]), ("running", "Plan EKS dev cluster", "eks-dev", 2, 1))
+        self.assertEqual([h["a"] for h in c["history"]], ["terraform plan -out eks.tfplan", "mcp tf_scan"])
+        self.ev(hook_event_name="AgentStatus", agent_type="terraform-expert", phase="done", status="PASS", summary="Plan: 23 to add")
+        c = self.cards()["copilot:77:terraform-expert"]
+        self.assertEqual((c["status"], c["result"], c["summary"]), ("done", "PASS", "Plan: 23 to add"))
+
+    def test_status_text_is_redacted(self):
+        self.ev(hook_event_name="AgentStatus", agent_type="devops-expert", phase="start", task="login with --password Hunter2pass99")
+        self.assertNotIn("Hunter2pass99", json.dumps(self.cards()))
+
+    def test_copilot_agents_are_told_to_report(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mca", ROOT / "scripts" / "make-copilot-agents.py")
+        mca = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mca)
+        for name in ("terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert"):
+            _, doc = mca.convert(ROOT / "agents" / f"{name}.md", "{{INFRACORTEX_ROOT}}")
+            with self.subTest(name):
+                self.assertIn(f'`hud_update` with `agent: "{name}"`', doc)
+                self.assertIn('phase: "done"', doc)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,7 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 - Terraform Expert: provisioning end to end, imports (`terraform query` / import blocks), module refactoring with `moved`, `.tftest.hcl` tests, Azure Verified Modules, Stacks, policy (Terraform Policy / Sentinel / OPA), and architecture diagrams — new playbook references, informed by hashicorp/agent-skills (no files copied).
 - Docker Expert studies the application before writing a Dockerfile (`app-analysis.md`); Kubernetes Expert covers Helm and Argo CD (`helm-argocd.md`); FinOps Expert framed as the costing master.
 - HUD: a playbook used directly in the main Claude Code conversation now gets a card (starts on the skill, follows the turn's steps, finishes on Stop).
+- HUD in **GitHub Copilot**: Copilot's agent hooks are a preview that organisations often disable, so the Copilot experts report start / step / done through a new `hud_update` MCP tool; their other InfraCortex tool calls appear as steps on the same card (one card per expert per window, text redacted).
 ### Fixed
 - Agent frontmatter with `: ` in the description is quoted (unquoted values silently dropped all frontmatter); a test guards it.
 
