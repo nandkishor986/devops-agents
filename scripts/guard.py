@@ -42,6 +42,12 @@ ASK: list[tuple[str, str]] = [
     (r"\bdocker\s+run\b[^|;&]*(--privileged|/var/run/docker\.sock|--pid[= ]host|--net(work)?[= ]host)", "privileged/host-level container"),
 ]
 
+# `terraform -chdir=infra apply …`, `terraform -no-color destroy` …: global options may sit between `terraform`
+# and the subcommand — every terraform rule must still match them.
+_TF = r"\bterraform(?:\s+-{1,2}[\w-]+(?:=\S+)?)*\s+"
+DENY = [(p.replace(r"\bterraform\s+", _TF), why) for p, why in DENY]
+ASK = [(p.replace(r"\bterraform\s+", _TF), why) for p, why in ASK]
+
 DRY_RUN = re.compile(r"--dry-run(=(client|server))?\b|\s--what-if\b|\bhelm\s+\S+[^|;&]*--dry-run|\baws\s+\S+\s+\S+[^|;&]*--dry-run\b")
 
 

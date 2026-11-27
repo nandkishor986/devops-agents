@@ -25,8 +25,17 @@ TOOLS = {  # script -> MCP tool exposed by extensions/claude-desktop/server
 }
 NOTE = ("> **Copilot edition.** No persistent memory between chats. Prefer the `infracortex` MCP tools "
         "({tools}) over running the scripts in a terminal — same output, and you can see each call in chat. "
-        "Never run destructive commands (terraform destroy, apply -auto-approve, az group delete, kubectl delete ns); "
-        "ask the user before any apply or other change.\n\n")
+        "Never run terraform destroy, `-auto-approve`, az group delete or kubectl delete ns. Changes (apply, kubectl apply, push) "
+        "need the user's explicit go-ahead in this chat; once given, run them yourself (Copilot shows the command for "
+        "confirmation) — never tell the user you can't.\n\n")
+COPILOT_OUTPUT = """## Output (answer the user directly — Markdown, never raw JSON)
+1. **Status:** PASS / WARN / FAIL / DONE / BLOCKED — one sentence on what you found or did.
+2. **Findings** (if any): table `Severity | Rule | File:line | Issue | Fix`, CRITICAL → LOW, at most 25 rows; group repeats.
+3. **What I changed / ran** and the verify result (e.g. `terraform validate` ✔, plan: 12 to add, 0 to change, 0 to destroy).
+4. **Needs your approval:** the exact command(s) and what they'll do (cost/risk in one line) — end with *"Reply **apply** and I'll run it."*
+5. **Next steps** (optional, ≤ 3 bullets).
+Keep it short; no JSON, no internal notes.
+"""
 
 
 def default_out() -> Path:
@@ -46,6 +55,11 @@ def convert(src: Path, root: str | None = None) -> tuple[str, str]:
     name = re.search(r"^name:\s*(.+)$", fm, re.M).group(1).strip()
     desc = re.search(r"^description:\s*(.+)$", fm, re.M).group(1).strip()
     body = body.replace("${CLAUDE_PLUGIN_ROOT}", root or ROOT.as_posix())
+    # Claude Code's contract gate consumes the JSON report; in Copilot the user reads the answer directly.
+    out_at = body.find("\n## Output")
+    if out_at != -1:
+        body = body[:out_at].rstrip() + "\n\n" + COPILOT_OUTPUT
+    desc = re.sub(r"\s*Returns a typed AgentReport[^.]*\.", "", desc)
     used = sorted({t for s, t in TOOLS.items() if s in body})
     head = f"---\nname: {name}\ndescription: {desc!r}\n---\n\n"
     return name, head + NOTE.format(tools=", ".join(f"`{t}`" for t in used) or "tf_scan, k8s_triage, …") + body

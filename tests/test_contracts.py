@@ -695,5 +695,53 @@ class CortexWeave(unittest.TestCase):
         self.assertIn("could not record", (Path(self.tmp) / "cortexweave/errors.log").read_text(encoding="utf-8"))
 
 
+
+class ApprovedChanges(unittest.TestCase):
+    """If the user says 'apply' for a reviewed plan, the agent runs it — within the guard's hard limits."""
+    AA = "-auto" + "-approve"
+
+    def test_agents_that_change_things_own_the_apply(self):
+        for name in ("terraform-engineer", "cortex", "k8s-troubleshooter", "docker-engineer"):
+            t = (ROOT / "agents" / f"{name}.md").read_text(encoding="utf-8")
+            with self.subTest(name):
+                self.assertIn("## Approved changes (you own the apply)", t)
+                self.assertIn("**you run it**", t)
+                self.assertIn("never claim you can't", t)
+                self.assertIn("Approval is per action", t)
+        tf = (ROOT / "agents" / "terraform-engineer.md").read_text(encoding="utf-8")
+        self.assertIn("apply -input=false <plan>", tf)
+        self.assertNotIn("Never run apply/", tf)
+        finops = (ROOT / "agents" / "finops-analyst.md").read_text(encoding="utf-8")
+        self.assertNotIn("## Approved changes", finops)                     # stays read-only
+
+    def test_guard_still_enforces_the_hard_limits(self):
+        d = lambda c: (guard.decide(c, use_jev=False) or ("allow",))[0]
+        self.assertEqual(d("terraform apply -input=false eks-dev.tfplan"), "ask")      # one confirmation click
+        self.assertEqual(d("terraform -chdir=infra apply -input=false tfplan"), "ask")
+        self.assertEqual(d(f"terraform apply eks-dev.tfplan {self.AA}"), "deny")
+        self.assertEqual(d("terraform " + "destroy -target=x"), "deny")
+        self.assertEqual(d("terraform -chdir=infra show -no-color tfplan"), "allow")
+        # global options before the subcommand must not slip past the hard limits
+        self.assertEqual(d("terraform -chdir=infra " + "destroy"), "deny")
+        self.assertEqual(d(f"terraform -chdir=infra apply tfplan {self.AA}"), "deny")
+        self.assertEqual(d("terraform -no-color state push x.tfstate"), "deny")
+
+    def test_copilot_agents_answer_in_markdown_not_json(self):
+        import importlib.util
+        import tempfile
+        spec = importlib.util.spec_from_file_location("mca", ROOT / "scripts" / "make-copilot-agents.py")
+        mca = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mca)
+        for name in ("terraform-engineer", "cortex"):
+            _, doc = mca.convert(ROOT / "agents" / f"{name}.md", "{{INFRACORTEX_ROOT}}")
+            with self.subTest(name):
+                self.assertNotIn("ONLY this JSON", doc)
+                self.assertNotIn("AgentReport", doc.split("---")[1])           # description
+                self.assertIn("never raw JSON", doc)
+                self.assertIn("Reply **apply** and I'll run it", doc)
+                self.assertIn("## Approved changes", doc)
+                self.assertIn("{{INFRACORTEX_ROOT}}/scripts/", doc)
+
+
 if __name__ == "__main__":
     unittest.main()

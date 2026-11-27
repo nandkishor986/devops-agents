@@ -4,6 +4,13 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [Unreleased]
 
+## [3.1.0]
+### Changed
+- **Agents own approved changes.** When the user explicitly says "apply" for a reviewed saved plan, terraform-engineer / cortex run `terraform apply -input=false <plan>` themselves (k8s-troubleshooter: `kubectl apply` of the changed files; docker-engineer: the approved push/rm), then verify. Hard limits unchanged: no `-auto-approve`, no destroy, no re-plan-and-apply; approval is per action; the client still shows the command for one confirmation click. finops-analyst stays read-only.
+- **Copilot agents answer in Markdown** (status, findings table, what changed, "Reply **apply** and I'll run it") instead of the raw JSON report meant for Claude Code's contract gate.
+### Fixed
+- Guard: Terraform global options before the subcommand (`terraform -chdir=infra destroy`, `… apply tfplan -auto-approve`) slipped past the deny/ask rules; they now match.
+
 ## [3.0.0] — one-click VS Code extension
 ### Added
 - The VS Code extension sets everything up itself: Copilot custom agents (`chatAgents`: terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, cortex), expert skills (`chatSkills`), and the InfraCortex MCP server (`mcpServerDefinitionProviders`) running on VS Code's own Node — no `mcp.json`, no Node install, no repo commands.
