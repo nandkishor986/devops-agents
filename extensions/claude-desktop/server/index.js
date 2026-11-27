@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// DevOps Agents — Claude Desktop extension (MCP server over stdio).
+// InfraCortex — Claude Desktop extension (MCP server over stdio).
 // Exposes the toolkit's scanners as typed MCP tools. Every tool:
 //   · runs a bundled script with an argument ARRAY (execFile, no shell → no injection)
 //   · resolves paths inside the configured workspace only (no ../ escapes)
@@ -69,7 +69,7 @@ const IMAGE = /^[A-Za-z0-9][A-Za-z0-9._\/:@-]{0,254}$/;
 const KV = /^[A-Za-z_][A-Za-z0-9_]{0,63}=[^\n]{0,500}$/;
 const RO = { readOnlyHint: true, openWorldHint: false };
 
-export const server = new McpServer({ name: "devops-agents", version: "1.9.0" });
+export const server = new McpServer({ name: "infracortex", version: "2.0.0" });
 
 // On-screen HUD: report each tool call (MCP clients such as Copilot don't run Claude Code hooks).
 // Shows tool-level activity only — the client's own reads/edits are not visible to this server.
@@ -85,7 +85,7 @@ function hudEvent(ev) {
 }
 const registerTool = server.registerTool.bind(server);
 server.registerTool = (name, def, handler) => registerTool(name, def, async (args, extra) => {
-  const agent = TOOL_AGENT[name] || "devops-agent";
+  const agent = TOOL_AGENT[name] || "cortex";
   hudEvent({ agent_type: agent, tool: name, phase: "start" });
   const res = await handler(args, extra);
   hudEvent({ agent_type: agent, tool: name, phase: "end", ok: !res?.isError });
@@ -223,5 +223,5 @@ server.registerTool("check_command", {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   await server.connect(new StdioServerTransport());
-  console.error(`devops-agents MCP ready · workspace=${WORKSPACE} · bash=${BASH} · currency=${CURRENCY}`);
+  console.error(`infracortex MCP ready · workspace=${WORKSPACE} · bash=${BASH} · currency=${CURRENCY}`);
 }

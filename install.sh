@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # install.sh — fallback installer when you DON'T want to use the plugin marketplace.
 # Copies agents/skills into ~/.claude (user scope), registers MCP servers, merges the guard hook.
-# Preferred instead:  /plugin marketplace add nandkishor986/devops-agents  &&  /plugin install devops-agents@upinclouds
+# Preferred instead:  /plugin marketplace add nandkishor986/infracortex  &&  /plugin install infracortex@upinclouds
 #
 # Usage: [DEVOPS_CURRENCY=INR] ./install.sh [--no-mcp] [--no-hook] [--uninstall]
 set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-DEST="$CLAUDE_DIR/devops-agents"
+DEST="$CLAUDE_DIR/infracortex"
 MCP=1; HOOK=1; UNINSTALL=0
 for a in "$@"; do case "$a" in --no-mcp) MCP=0;; --no-hook) HOOK=0;; --uninstall) UNINSTALL=1;; esac; done
 AGENTS=(terraform-engineer k8s-troubleshooter docker-engineer finops-analyst)
@@ -20,7 +20,7 @@ if [[ $UNINSTALL -eq 1 ]]; then
   for s in "${SKILLS[@]}"; do rm -rf "$CLAUDE_DIR/skills/$s"; done
   rm -rf "$DEST"
   command -v claude >/dev/null && for m in terraform azure kubernetes drawio; do claude mcp remove -s user "$m" >/dev/null 2>&1 || true; done
-  echo "Removed. Agent memory kept in $CLAUDE_DIR/agent-memory/ (delete manually if wanted). Hook entry in settings.json left in place — remove the devops-agents guard line if desired."
+  echo "Removed. Agent memory kept in $CLAUDE_DIR/agent-memory/ (delete manually if wanted). Hook entry in settings.json left in place — remove the infracortex guard line if desired."
   exit 0
 fi
 
@@ -62,12 +62,12 @@ s=json.loads(p.read_text(encoding="utf-8")) if p.exists() and p.read_text().stri
 if p.exists(): shutil.copy(p, f"{p}.bak.{int(time.time())}")
 cmd=f'python3 "{guard}" 2>/dev/null || python "{guard}"'
 pre=s.setdefault("hooks",{}).setdefault("PreToolUse",[])
-if not any("devops-agents" in h.get("command","") or "guard.py" in h.get("command","") for m in pre for h in m.get("hooks",[])):
+if not any("infracortex" in h.get("command","") or "guard.py" in h.get("command","") for m in pre for h in m.get("hooks",[])):
     pre.append({"matcher":"Bash","hooks":[{"type":"command","command":cmd,"timeout":5}]})
 gate=guard.replace("guard.py","contract_gate.py")
 stop=s["hooks"].setdefault("SubagentStop",[])
 if not any("contract_gate.py" in h.get("command","") for m in stop for h in m.get("hooks",[])):
-    stop.append({"matcher":"^(devops-agents:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst)$","hooks":[{"type":"command","command":f'python3 "{gate}" 2>/dev/null || python "{gate}"',"timeout":10}]})
+    stop.append({"matcher":"^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst)$","hooks":[{"type":"command","command":f'python3 "{gate}" 2>/dev/null || python "{gate}"',"timeout":10}]})
 p.write_text(json.dumps(s,indent=2),encoding="utf-8"); print("✓ guard + contract-gate hooks merged into", p)
 EOF
 fi

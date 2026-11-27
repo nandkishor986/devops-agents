@@ -10,9 +10,9 @@ In scope, for example:
 - anything that sends user data to a third party without the user enabling it.
 
 ## What the toolkit stores locally
-- `~/.devops-agents/learning/*.json` — normalised error lines of failed agent commands (paths, quoted strings and numbers are replaced with placeholders).
-- `~/.devops-agents/hud/state.json` — agent names, project folder names, last tool steps (shortened), timings.
-- `~/.claude/agent-memory/devops-agents-*/MEMORY.md` — conventions and lessons written by the agents (instructed never to store secrets, IDs or IPs).
+- `~/.infracortex/learning/*.json` — normalised error lines of failed agent commands (paths, quoted strings and numbers are replaced with placeholders).
+- `~/.infracortex/hud/state.json` — agent names, project folder names, last tool steps (shortened), timings.
+- `~/.claude/agent-memory/infracortex-*/MEMORY.md` — conventions and lessons written by the agents (instructed never to store secrets, IDs or IPs).
 Nothing is uploaded by the toolkit itself. Delete those folders at any time; `DEVOPS_HUD=off` and `DEVOPS_LEARN=off` disable the HUD and learning.
 
 ## Supported versions

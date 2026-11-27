@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "devops-agents/report.v1",
+  "$id": "infracortex/report.v1",
   "title": "AgentReport",
   "description": "Typed contract every DevOps subagent returns as its FINAL message. Compact by design: no prose outside `summary`.",
   "type": "object",
@@ -23,7 +23,7 @@
         "k8s",
         "docker",
         "finops",
-        "devops"
+        "cortex"
       ]
     },
     "task": {

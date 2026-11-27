@@ -1,9 +1,9 @@
 {
-  "name": "devops-agents-desktop",
-  "version": "1.9.1",
+  "name": "infracortex-desktop",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "DevOps Agents MCP server for Claude Desktop (.mcpb)",
+  "description": "InfraCortex MCP server for Claude Desktop (.mcpb)",
   "main": "server/index.js",
   "engines": { "node": ">=18" },
   "dependencies": {

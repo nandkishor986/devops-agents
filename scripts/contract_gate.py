@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_report as vr  # noqa: E402
 
-AGENTS = re.compile(r"^(devops-agents:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|devops-agent)$")
+AGENTS = re.compile(r"^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$")
 
 
 def extract(msg: str) -> object:
@@ -92,7 +92,7 @@ def main() -> int:
     except Exception:  # noqa: BLE001
         pass
     if data.get("stop_hook_active"):
-        print(json.dumps({"systemMessage": f"devops-agents: report still invalid after one retry ({errs})"}))
+        print(json.dumps({"systemMessage": f"infracortex: report still invalid after one retry ({errs})"}))
         return 0
     print(json.dumps({
         "decision": "block",

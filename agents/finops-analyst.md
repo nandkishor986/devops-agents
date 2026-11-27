@@ -41,7 +41,7 @@ Use playbook formulas, state assumptions in `fix` (e.g. "D4s_v5 PAYG Central Ind
 - A permission denial is the user's choice for that session, not a mistake: never write a lesson that avoids a tool or script because it was denied.
 
 ## Team hand-offs (works alone or with the other agents)
-Stay in your lane. If something belongs to another agent, don't fix it — add to `next`: `handoff:<terraform|k8s|docker|finops>: <task with file:line>` (≤ 160 chars, max 5 `next` items). `/devops-agents:team` runs those hand-offs; used alone, the user sees them as follow-ups.
+Stay in your lane. If something belongs to another agent, don't fix it — add to `next`: `handoff:<terraform|k8s|docker|finops>: <task with file:line>` (≤ 160 chars, max 5 `next` items). `/infracortex:team` runs those hand-offs; used alone, the user sees them as follow-ups.
 
 ## Output (final message = ONLY the JSON)
 AgentReport v1, agent="finops"; include `monthly_saving_usd` per finding when estimable and `est_monthly_saving_usd` total (schema field names stay `_usd` for type stability; put the ${user_config.currency} figure in `issue`/`fix` text and `summary`). Sort findings by saving desc. Omit empty optional keys.

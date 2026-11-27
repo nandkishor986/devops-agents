@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DevOps Agents HUD for macOS/Linux (tkinter). Windows uses hud.ps1. Same state.json contract.
+"""InfraCortex HUD for macOS/Linux (tkinter). Windows uses hud.ps1. Same state.json contract.
 
 Usage: hud.py <state_dir>   — started automatically by agent_events.py; exits after 90 s idle.
 """
@@ -15,7 +15,7 @@ try:
 except ImportError:  # no Tk on this Python: silently skip the HUD
     sys.exit(0)
 
-STATE = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / ".devops-agents" / "hud"
+STATE = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / ".infracortex" / "hud"
 COLORS = {"terraform-engineer": "#8B5CF6", "k8s-troubleshooter": "#3B82F6",
           "docker-engineer": "#06B6D4", "finops-analyst": "#22C55E"}
 GLYPH = {"PASS": "✅", "DONE": "✅", "WARN": "⚠️", "FAIL": "❌", "BLOCKED": "⛔"}
@@ -35,7 +35,7 @@ class Hud:
         self.tick, self.idle, self.moved = 0, time.time(), False
         bar = tk.Frame(self.root, bg="#1e1e2e")
         bar.pack(fill="x")
-        tk.Label(bar, text="  🤖  DevOps Agents", fg="#cdd6f4", bg="#1e1e2e", font=("Helvetica", 10, "bold")).pack(side="left")
+        tk.Label(bar, text="  🤖  InfraCortex", fg="#cdd6f4", bg="#1e1e2e", font=("Helvetica", 10, "bold")).pack(side="left")
         tk.Button(bar, text="×", command=self.root.destroy, bd=0, fg="#a6adc8", bg="#1e1e2e").pack(side="right")
         bar.bind("<B1-Motion>", self.drag)
         self.body = tk.Frame(self.root, bg="#1e1e2e")

@@ -1,4 +1,4 @@
-# DevOps Agents HUD (Windows). Custom-drawn, DPI-aware, always-on-top panel showing every devops agent that is
+# InfraCortex HUD (Windows). Custom-drawn, DPI-aware, always-on-top panel showing every devops agent that is
 # working right now: who (agent), where (app + project), what (task + last steps), how long, and the result.
 # Started by agent_events.py; reads <StateDir>\state.json, writes <StateDir>\heartbeat; exits after 90 s idle.
 # ASCII-only source (Windows PowerShell 5.1); the C# below is C# 5 (no interpolated strings, no ?., no =>-members).
@@ -36,7 +36,7 @@ public class DevOpsHud : Form {
         { "k8s-troubleshooter", new[] { "Kubernetes Troubleshooter", "K8s", "#3B82F6" } },
         { "docker-engineer",    new[] { "Docker Engineer", "DK", "#06B6D4" } },
         { "finops-analyst",     new[] { "FinOps Analyst", "FO", "#22C55E" } },
-        { "devops-agent",       new[] { "DevOps Agent", "DO", "#F97316" } } };
+        { "cortex",             new[] { "Cortex", "CX", "#F97316" } } };
 
     readonly string stateDir;
     List<HudAgent> agents = new List<HudAgent>();
@@ -163,7 +163,7 @@ public class DevOpsHud : Form {
             g.DrawLine(wp, logo.X + P(6), logo.Y + P(10), logo.X + P(9), logo.Y + P(13));
             g.DrawLine(wp, logo.X + P(9), logo.Y + P(13), logo.X + P(14), logo.Y + P(7));
         }
-        Txt(g, "DevOps Agents", fTitle, C("#E5E7EB"), new Rectangle(P(42), 0, P(140), P(HEAD)), TextFormatFlags.Default);
+        Txt(g, "InfraCortex", fTitle, C("#E5E7EB"), new Rectangle(P(42), 0, P(140), P(HEAD)), TextFormatFlags.Default);
         int running = agents.Count(a => a.Status == "running"), done = agents.Count - running;
         string counts = running > 0 ? (done > 0 ? running + " running" + DOT + done + " done" : running + " running") : done + " done";
         Txt(g, counts, fSmall, C("#9CA3AF"), new Rectangle(P(170), 0, P(150), P(HEAD)), TextFormatFlags.Right);

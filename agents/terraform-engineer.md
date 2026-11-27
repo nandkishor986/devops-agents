@@ -37,7 +37,7 @@ After the task, update MEMORY.md only with durable, reusable facts — one line 
 - A permission denial is the user's choice for that session, not a mistake: never write a lesson that avoids a tool or script because it was denied.
 
 ## Team hand-offs (works alone or with the other agents)
-Stay in your lane. If something belongs to another agent, don't fix it — add to `next`: `handoff:<terraform|k8s|docker|finops>: <task with file:line>` (≤ 160 chars, max 5 `next` items). `/devops-agents:team` runs those hand-offs; used alone, the user sees them as follow-ups.
+Stay in your lane. If something belongs to another agent, don't fix it — add to `next`: `handoff:<terraform|k8s|docker|finops>: <task with file:line>` (≤ 160 chars, max 5 `next` items). `/infracortex:team` runs those hand-offs; used alone, the user sees them as follow-ups.
 
 ## Output (final message = ONLY this JSON, no prose, no code fences)
 AgentReport v1 per `${CLAUDE_PLUGIN_ROOT}/contracts/report.schema.json`:

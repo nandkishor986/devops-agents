@@ -7,7 +7,7 @@ Writes <name>.agent.md files that VS Code Copilot Chat shows in its agent picker
 
 Claude-only frontmatter (model, effort, maxTurns, memory, color, ...) is dropped; ${CLAUDE_PLUGIN_ROOT}
 is replaced with this repo's absolute path so skills/, scripts/ and contracts/ references still resolve.
-The scanners are also exposed by the `devops-agents` MCP server (see README: VS Code / Copilot).
+The scanners are also exposed by the `infracortex` MCP server (see README: VS Code / Copilot).
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ TOOLS = {  # script -> MCP tool exposed by extensions/claude-desktop/server
     "docker-verify.sh": "docker_verify", "finops-scan.sh": "finops_scan", "az-price.sh": "az_price",
     "azdiagram.py": "azure_diagram", "validate_report.py": "validate_report",
 }
-NOTE = ("> **Copilot edition.** No persistent memory between chats. Prefer the `devops-agents` MCP tools "
+NOTE = ("> **Copilot edition.** No persistent memory between chats. Prefer the `infracortex` MCP tools "
         "({tools}) over running the scripts in a terminal — same output, and you can see each call in chat. "
         "Never run destructive commands (terraform destroy, apply -auto-approve, az group delete, kubectl delete ns); "
         "ask the user before any apply or other change.\n\n")

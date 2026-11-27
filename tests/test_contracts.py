@@ -8,9 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-# never let tests write into the real learning journal / HUD state (~/.devops-agents)
+# never let tests write into the real learning journal / HUD state (~/.infracortex)
 import tempfile  # noqa: E402
-os.environ.setdefault("DEVOPS_AGENTS_HOME", tempfile.mkdtemp(prefix="devops-agents-test-"))
+os.environ.setdefault("INFRACORTEX_HOME", tempfile.mkdtemp(prefix="infracortex-test-"))
 os.environ["DEVOPS_HUD"] = "off"
 import guard  # noqa: E402
 import validate_report as vr  # noqa: E402
@@ -80,19 +80,19 @@ class ContractGate(unittest.TestCase):
         return json.loads(p.stdout) if p.stdout.strip() else None
 
     def test_valid_passes(self):
-        self.assertIsNone(self.gate("devops-agents:terraform-engineer", json.dumps(GOOD)))
+        self.assertIsNone(self.gate("infracortex:terraform-engineer", json.dumps(GOOD)))
 
     def test_fenced_valid_passes(self):
         self.assertIsNone(self.gate("terraform-engineer", "```json\n" + json.dumps(GOOD) + "\n```"))
 
     def test_prose_blocked(self):
-        self.assertEqual(self.gate("devops-agents:docker-engineer", "All fixed!")["decision"], "block")
+        self.assertEqual(self.gate("infracortex:docker-engineer", "All fixed!")["decision"], "block")
 
     def test_other_agents_ignored(self):
         self.assertIsNone(self.gate("Explore", "anything"))
 
     def test_no_infinite_loop(self):
-        out = self.gate("devops-agents:docker-engineer", "still prose", active=True)
+        out = self.gate("infracortex:docker-engineer", "still prose", active=True)
         self.assertNotIn("decision", out)
 
 
@@ -269,8 +269,8 @@ class Learning(unittest.TestCase):
     def setUp(self):
         import tempfile
         self.tmp = tempfile.mkdtemp()
-        self.saved = {k: os.environ.get(k) for k in ("DEVOPS_AGENTS_HOME", "DEVOPS_HUD")}
-        os.environ.update(DEVOPS_AGENTS_HOME=self.tmp, DEVOPS_HUD="off")
+        self.saved = {k: os.environ.get(k) for k in ("INFRACORTEX_HOME", "DEVOPS_HUD")}
+        os.environ.update(INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="off")
         import importlib
         import agent_events
         self.ae = importlib.reload(agent_events)
@@ -287,11 +287,11 @@ class Learning(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         return json.loads(r.stdout) if r.stdout.strip() else None
 
-    def failure(self, cmd, err, agent="devops-agents:terraform-engineer"):
+    def failure(self, cmd, err, agent="infracortex:terraform-engineer"):
         return self.hook({"hook_event_name": "PostToolUseFailure", "agent_type": agent, "agent_id": "a",
                           "tool_name": "Bash", "tool_input": {"command": cmd}, "error": err})
 
-    def start(self, agent="devops-agents:terraform-engineer"):
+    def start(self, agent="infracortex:terraform-engineer"):
         return self.hook({"hook_event_name": "SubagentStart", "agent_type": agent, "agent_id": "a"})
 
     def test_same_error_different_details_is_one_mistake(self):
@@ -316,11 +316,11 @@ class Learning(unittest.TestCase):
 
     def test_contract_rejection_is_recorded(self):
         r = subprocess.run([sys.executable, str(ROOT / "scripts" / "contract_gate.py")], capture_output=True, text=True,
-                           input=json.dumps({"agent_type": "devops-agents:docker-engineer",
+                           input=json.dumps({"agent_type": "infracortex:docker-engineer",
                                              "last_assistant_message": '{"agent":"docker","version":"v1"}'}),
                            env=os.environ.copy())
         self.assertIn('"block"', r.stdout)
-        ctx = self.start("devops-agents:docker-engineer")["hookSpecificOutput"]["additionalContext"]
+        ctx = self.start("infracortex:docker-engineer")["hookSpecificOutput"]["additionalContext"]
         self.assertIn("rejected by the contract gate", ctx)
 
     def hud_state(self):
@@ -330,10 +330,10 @@ class Learning(unittest.TestCase):
         os.environ.update(DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off", CLAUDE_CODE_ENTRYPOINT="claude-vscode")
         try:
             self.hook({"hook_event_name": "PreToolUse", "tool_name": "Agent", "cwd": "C:/work/payments-infra",
-                       "tool_input": {"subagent_type": "devops-agents:terraform-engineer", "description": "Review KV module"}})
-            self.hook({"hook_event_name": "SubagentStart", "agent_type": "devops-agents:terraform-engineer", "agent_id": "x1",
+                       "tool_input": {"subagent_type": "infracortex:terraform-engineer", "description": "Review KV module"}})
+            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:terraform-engineer", "agent_id": "x1",
                        "cwd": "C:/work/payments-infra"})
-            self.hook({"hook_event_name": "PreToolUse", "agent_type": "devops-agents:terraform-engineer", "agent_id": "x1",
+            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:terraform-engineer", "agent_id": "x1",
                        "tool_name": "Read", "tool_input": {"file_path": "C:/work/payments-infra/kv.tf"}})
             card = self.hud_state()["x1"]
             self.assertEqual((card["source"], card["project"], card["task"]), ("VS Code", "payments-infra", "Review KV module"))
@@ -373,9 +373,9 @@ class Learning(unittest.TestCase):
 
     def test_handback_report_is_validated_not_rejected(self):
         """VS Code/Desktop agents hand their report back via a tool call; the final message has no JSON."""
-        good = {"v": 1, "agent": "devops", "task": "review", "status": "WARN", "summary": "ok", "findings": [
+        good = {"v": 1, "agent": "cortex", "task": "review", "status": "WARN", "summary": "ok", "findings": [
             {"id": "TF-SEC-004", "sev": "MEDIUM", "file": "a.tf", "line": 1, "issue": "i", "fix": "f"}]}
-        stop = {"agent_type": "devops-agents:devops-agent", "agent_id": "h1", "last_assistant_message": "",
+        stop = {"agent_type": "infracortex:cortex", "agent_id": "h1", "last_assistant_message": "",
                 "agent_transcript_path": self._transcript(good)}
         self.assertEqual(self.gate(stop), "")                                   # accepted
         bad = dict(good, summary="x" * 500)
@@ -384,14 +384,14 @@ class Learning(unittest.TestCase):
     def test_card_always_finishes_and_reopens_on_new_work(self):
         os.environ.update(DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off")
         try:
-            bad = {"v": 1, "agent": "devops", "task": "review", "status": "WARN", "summary": "x" * 500, "findings": []}
-            self.hook({"hook_event_name": "SubagentStart", "agent_type": "devops-agents:devops-agent", "agent_id": "c1"})
-            self.hook({"hook_event_name": "SubagentStop", "agent_type": "devops-agents:devops-agent", "agent_id": "c1",
+            bad = {"v": 1, "agent": "cortex", "task": "review", "status": "WARN", "summary": "x" * 500, "findings": []}
+            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:cortex", "agent_id": "c1"})
+            self.hook({"hook_event_name": "SubagentStop", "agent_type": "infracortex:cortex", "agent_id": "c1",
                        "last_assistant_message": "", "agent_transcript_path": self._transcript(bad)})
             card = self.hud_state()["c1"]
             self.assertEqual((card["status"], card["result"]), ("done", "WARN"))   # never left "re-writing" forever
             self.assertFalse(card["history"][-1]["ok"])
-            self.hook({"hook_event_name": "PreToolUse", "agent_type": "devops-agents:devops-agent", "agent_id": "c1",
+            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:cortex", "agent_id": "c1",
                        "tool_name": "Read", "tool_input": {"file_path": "x.tf"}})
             self.assertEqual(self.hud_state()["c1"]["status"], "running")
         finally:
@@ -399,7 +399,7 @@ class Learning(unittest.TestCase):
             os.environ["DEVOPS_HUD"] = "off"
 
     def test_devops_agent_report_spans_domains(self):
-        doc = {"v": 1, "agent": "devops", "task": "review", "status": "FAIL", "summary": "x", "findings": [
+        doc = {"v": 1, "agent": "cortex", "task": "review", "status": "FAIL", "summary": "x", "findings": [
             {"id": "TF-SEC-003", "sev": "HIGH", "file": "a.tf", "line": 1, "issue": "i", "fix": "f"},
             {"id": "DKR-SEC-009", "sev": "CRITICAL", "file": "Dockerfile", "line": 2, "issue": "i", "fix": "f"}]}
         self.assertEqual(vr.validate(doc).errors, [])

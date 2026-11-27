@@ -1,4 +1,4 @@
-# Contributing to DevOps Agents
+# Contributing to InfraCortex
 
 Thanks for helping! This project is a Claude Code plugin (agents, skills, hooks, MCP config) plus a VS Code extension, a Claude Desktop extension and GitHub Copilot agents generated from the same sources.
 
@@ -12,7 +12,7 @@ Thanks for helping! This project is a Claude Code plugin (agents, skills, hooks,
 ## Layout
 | Path | What |
 |---|---|
-| `agents/` | the five agents (terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, devops-agent) |
+| `agents/` | the five agents (terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, cortex) |
 | `skills/` | expert skills (+ `references/`, `references/learned.md`), slash commands (`tf-review`, `team`, `learn`, …) |
 | `scripts/` | scanners (`tf-scan.sh`, `k8s-triage.sh`, …), `guard.py`, `contract_gate.py`, `agent_events.py` (HUD + learning), `hud.ps1`/`hud.py` |
 | `hooks/hooks.json` | guard, contract gate, HUD and learning hooks |
@@ -23,18 +23,18 @@ Thanks for helping! This project is a Claude Code plugin (agents, skills, hooks,
 
 ## Develop and test
 ```bash
-git clone https://github.com/nandkishor986/devops-agents && cd devops-agents
+git clone https://github.com/nandkishor986/infracortex && cd infracortex
 pip install python-hcl2 diagrams          # optional extras used by some tests
 python -m unittest discover -s tests -v   # must pass
 claude plugin validate .                  # plugin manifest/hooks/skills check
-claude plugin marketplace add "$PWD" && claude plugin install devops-agents@upinclouds   # try it locally
+claude plugin marketplace add "$PWD" && claude plugin install infracortex@upinclouds   # try it locally
 bash extensions/build.sh                  # optional: build .mcpb + .vsix (Node >= 18)
 python scripts/make-copilot-agents.py     # optional: regenerate Copilot agents after editing agents/
 ```
-After changing plugin files, bump `version` in `.claude-plugin/plugin.json` (and the extension manifests) and run `claude plugin update devops-agents@upinclouds`.
+After changing plugin files, bump `version` in `.claude-plugin/plugin.json` (and the extension manifests) and run `claude plugin update infracortex@upinclouds`.
 
 ## Improving the agents with real lessons
-Agents record their own mistakes and write lessons to local memory. When a lesson proves itself, run `/devops-agents:learn all --promote` — it moves generic, secret-free lessons into `skills/<domain>-expert/references/learned.md`. Open a PR with that diff: it's the most valuable kind of contribution, because every user's agents then skip that mistake.
+Agents record their own mistakes and write lessons to local memory. When a lesson proves itself, run `/infracortex:learn all --promote` — it moves generic, secret-free lessons into `skills/<domain>-expert/references/learned.md`. Open a PR with that diff: it's the most valuable kind of contribution, because every user's agents then skip that mistake.
 
 ## Pull requests
 1. One topic per PR; describe the problem and how you verified the fix (test, eval or a real run).

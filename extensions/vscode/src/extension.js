@@ -1,4 +1,4 @@
-// DevOps Agents — VS Code extension. Runs the toolkit's bundled scripts, shows the digest in an
+// InfraCortex — VS Code extension. Runs the toolkit's bundled scripts, shows the digest in an
 // Output channel and puts rule-ID findings into the Problems panel. No chat, no tokens.
 "use strict";
 const vscode = require("vscode");
@@ -30,7 +30,7 @@ function python() { return cfg("pythonPath", "") || (process.platform === "win32
 function run(ctx, title, cmd, args, parseCtx) {
   out.show(true);
   out.appendLine(`\n━━ ${title}  ·  ${new Date().toLocaleTimeString()}`);
-  return vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `DevOps Agents: ${title}`, cancellable: true },
+  return vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `InfraCortex: ${title}`, cancellable: true },
     (_p, token) => new Promise((resolve) => {
       const child = execFile(cmd, args, { cwd: ws(), maxBuffer: 16 * 1024 * 1024, windowsHide: true,
         env: { ...process.env, DEVOPS_CURRENCY: cfg("currency", "INR") } }, (err, so, se) => {
@@ -53,14 +53,14 @@ function publish(text, parseCtx) {
     const r = rules[f.id];
     const sev = f.sev || (r ? r.sev : "MEDIUM");
     const d = new vscode.Diagnostic(new vscode.Range(f.line, 0, f.line, 200), `${f.message}${r ? ` — ${r.title}` : ""}`, SEV[sev] ?? 1);
-    d.source = "devops-agents"; d.code = f.id;
+    d.source = "infracortex"; d.code = f.id;
     const k = vscode.Uri.file(f.file).toString();
     if (!byFile.has(k)) byFile.set(k, []);
     byFile.get(k).push(d);
   }
   for (const [k, list] of byFile) diags.set(vscode.Uri.parse(k), list);
   const n = found.length;
-  vscode.window.showInformationMessage(n ? `DevOps Agents: ${n} finding(s) — see Problems panel.` : "DevOps Agents: no findings.", ...(n ? ["Open Problems"] : []))
+  vscode.window.showInformationMessage(n ? `InfraCortex: ${n} finding(s) — see Problems panel.` : "InfraCortex: no findings.", ...(n ? ["Open Problems"] : []))
     .then((b) => b && vscode.commands.executeCommand("workbench.actions.view.problems"));
 }
 
@@ -80,11 +80,11 @@ async function pickFile(label, filters, uri) {
 }
 
 function activate(ctx) {
-  out = vscode.window.createOutputChannel("DevOps Agents");
-  diags = vscode.languages.createDiagnosticCollection("devops-agents");
+  out = vscode.window.createOutputChannel("InfraCortex");
+  diags = vscode.languages.createDiagnosticCollection("infracortex");
   rules = loadRuleSeverities(path.join(root(ctx), "contracts", "RULES.md"));
   const reg = (id, fn) => ctx.subscriptions.push(vscode.commands.registerCommand(id, async (...a) => {
-    try { await fn(...a); } catch (e) { vscode.window.showErrorMessage(`DevOps Agents: ${e.message}`); }
+    try { await fn(...a); } catch (e) { vscode.window.showErrorMessage(`InfraCortex: ${e.message}`); }
   }));
 
   reg("devopsAgents.tfScan", async (uri) => {

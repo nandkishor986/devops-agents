@@ -1,13 +1,13 @@
 {
-  "name": "devops-agents",
-  "displayName": "DevOps Agents (upinclouds)",
-  "version": "1.9.1",
+  "name": "infracortex",
+  "displayName": "InfraCortex (upinclouds)",
+  "version": "2.0.0",
   "description": "Token-lean Terraform (Azure-first), Kubernetes, Docker and FinOps subagents with persistent memory, official MCP servers, a typed report contract and a destructive-command guard.",
   "author": {
     "name": "Nandu",
     "url": "https://github.com/nandkishor986"
   },
-  "repository": "https://github.com/nandkishor986/devops-agents",
+  "repository": "https://github.com/nandkishor986/infracortex",
   "license": "MIT",
   "keywords": [
     "devops",

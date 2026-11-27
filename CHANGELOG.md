@@ -4,6 +4,13 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [Unreleased]
 
+## [2.0.0] — renamed to InfraCortex
+### Changed (breaking)
+- Project, plugin, repo and MCP server renamed from `devops-agents` to **`infracortex`**: install with `/plugin install infracortex@upinclouds`; commands are `/infracortex:team`, `/infracortex:tf-review`, …
+- The all-in-one `devops-agent` is now **`cortex`** (`/infracortex:cortex`); its reports use `"agent": "cortex"`.
+- Local state moved from `~/.devops-agents` to `~/.infracortex` (`INFRACORTEX_HOME` overrides); agent memory lives in `~/.claude/agent-memory/infracortex-<agent>/`.
+- Old GitHub URLs redirect to the new repository.
+
 ## [1.9.1]
 ### Fixed
 - Contract gate and HUD read the report from a `SubagentHandback` tool call (VS Code panel / Desktop background agents), so valid reports are no longer rejected and cards no longer show *Stalled*.
@@ -11,15 +18,15 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [1.9.0]
 ### Added
-- `devops-agent`: one agent combining Terraform, Kubernetes, Docker and FinOps (`/devops-agents:devops`; also a Copilot agent). Reports may mix `TF-`, `K8S-`, `DKR-`, `FIN-` findings (`"agent": "devops"`).
+- `cortex`: one agent combining Terraform, Kubernetes, Docker and FinOps (`/infracortex:cortex`; also a Copilot agent). Reports may mix `TF-`, `K8S-`, `DKR-`, `FIN-` findings (`"agent": "devops"`).
 - Redesigned on-screen HUD (custom-drawn, DPI-aware): status pills, progress ring, source (`VS Code · project`), task, last steps, errors recorded for learning, *Stalled* detection.
 - The MCP server reports its tool calls to the HUD, so Copilot / Claude Desktop activity is visible.
 
 ## [1.8.x]
 ### Added
 - On-screen agent HUD (Windows WinForms, macOS/Linux tkinter).
-- Self-learning: hooks record failed commands, guard blocks and rejected reports; the agent is told about new/repeated mistakes on its next run and writes LESSON lines to its memory; `/devops-agents:learn --promote` moves proven lessons into skills.
-- `/devops-agents:team`: runs the matching agents in parallel and routes `handoff:` items between them.
+- Self-learning: hooks record failed commands, guard blocks and rejected reports; the agent is told about new/repeated mistakes on its next run and writes LESSON lines to its memory; `/infracortex:learn --promote` moves proven lessons into skills.
+- `/infracortex:team`: runs the matching agents in parallel and routes `handoff:` items between them.
 ### Fixed
 - HUD process survives Claude Code's hook job object on Windows.
 

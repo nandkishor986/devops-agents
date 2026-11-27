@@ -16,13 +16,13 @@ Keep your own context small: never read the repo yourself; pass briefs, keep onl
 | `**/Dockerfile*`, `compose*.y*ml` | `docker-engineer` | each Dockerfile |
 | .tf present and goal mentions cost/FinOps/"everything" | `finops-analyst` | cost of the .tf dirs (Infracost or price lookups) |
 
-Small cross-domain task (≤ ~15 files, e.g. "Dockerfile + manifest + ACR for one service")? Use the single `devops-agent` instead of several specialists — one context, cheaper. Use the specialists in parallel for anything bigger.
+Small cross-domain task (≤ ~15 files, e.g. "Dockerfile + manifest + ACR for one service")? Use the single `cortex` instead of several specialists — one context, cheaper. Use the specialists in parallel for anything bigger.
 
 Skip agents with nothing to do. If nothing is found, say so and stop.
 
 ## 2. Wave 1 — launch the chosen agents IN PARALLEL (one message, several Agent calls)
 Brief each: "task=<review|implement|troubleshoot> for <scope>. Goal: <goal>. Stay in your lane; put cross-domain items in `next` as `handoff:<agent>: …`. Do NOT apply/deploy."
-Each agent shows up live in the DevOps Agents HUD on screen while it works.
+Each agent shows up live in the InfraCortex HUD on screen while it works.
 
 ## 3. Wave 2 — hand-offs (at most one extra wave)
 Collect every `next` item starting `handoff:<terraform|k8s|docker|finops>:` from wave-1 reports. Group by target agent, drop duplicates and anything that agent already covered, then launch the targets in parallel with exactly those items as the brief. Never loop beyond wave 2 — remaining hand-offs go to the user as follow-ups.

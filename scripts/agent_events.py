@@ -7,7 +7,7 @@ Events (hook JSON on stdin; anything not from a devops agent exits immediately):
   PostToolUseFailure  -> journal the failure (normalised signature, counted) + HUD error count
   SubagentStop        -> HUD shows PASS/WARN/FAIL/DONE/BLOCKED (or "fixing report" if the contract gate will block)
 
-State lives in ~/.devops-agents (override: DEVOPS_AGENTS_HOME). Switches: DEVOPS_HUD=off, DEVOPS_LEARN=off.
+State lives in ~/.infracortex (override: INFRACORTEX_HOME). Switches: DEVOPS_HUD=off, DEVOPS_LEARN=off.
 Never blocks the user: every error is swallowed and the hook exits 0.
 """
 from __future__ import annotations
@@ -22,9 +22,9 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-HOME = Path(os.environ.get("DEVOPS_AGENTS_HOME") or Path.home() / ".devops-agents")
+HOME = Path(os.environ.get("INFRACORTEX_HOME") or Path.home() / ".infracortex")
 HUD_DIR, LEARN_DIR = HOME / "hud", HOME / "learning"
-AGENT_RE = re.compile(r"^(?:devops-agents:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|devops-agent)$")
+AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$")
 MAX_MISTAKES, INJECT_TOP = 60, 6
 # failures that are normal control flow, not mistakes (grep/test/diff exit 1)
 BENIGN = re.compile(r"^\s*(grep|rg|test|\[|diff|cmp|command -v|which|ls)\b")
@@ -122,7 +122,7 @@ def lessons_context(agent: str) -> str:
         what = "your final report was rejected by the contract gate" if m["kind"] == "contract" else \
                "a command you ran was blocked by the guard" if m["kind"] == "blocked" else f"{m['tool']} `{m['cmd'][:70]}` failed"
         rows.append(f"- [{tag}] {what}: {m['error'][:110]}")
-    return ("## Mistakes from your previous runs (auto-recorded by devops-agents)\n" + "\n".join(rows) +
+    return ("## Mistakes from your previous runs (auto-recorded by infracortex)\n" + "\n".join(rows) +
             "\nBefore starting: for each item, add or sharpen ONE line under `## Lessons` in your MEMORY.md — "
             "`- LESSON: <situation> → <do this instead>` (dedupe, keep ≤ 20). REPEATED items mean an existing lesson "
             "did not work: make it more specific. Then follow your lessons for this task.")
@@ -236,7 +236,7 @@ def on_start(d: dict, agent: str) -> dict | None:
 
 
 def on_mcp(d: dict, agent: str) -> None:
-    """A tool call on the devops-agents MCP server. One card per (client process, domain); idle between calls."""
+    """A tool call on the infracortex MCP server. One card per (client process, domain); idle between calls."""
     aid = f"mcp:{d.get('session', '')}:{agent}"
     tool, phase = str(d.get("tool", "")), d.get("phase")
 
@@ -356,7 +356,7 @@ def main() -> int:
         return 0
     ev = d.get("hook_event_name")
     agent = agent_of(d)
-    if ev == "McpTool" and agent:  # from the devops-agents MCP server (Copilot / Claude Desktop)
+    if ev == "McpTool" and agent:  # from the infracortex MCP server (Copilot / Claude Desktop)
         try:
             on_mcp(d, agent)
         except Exception:  # noqa: BLE001

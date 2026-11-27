@@ -24,7 +24,7 @@ class Agent(str, Enum):
     K8S = "k8s"
     DOCKER = "docker"
     FINOPS = "finops"
-    DEVOPS = "devops"  # combined agent: any of the four domains
+    CORTEX = "cortex"  # combined agent (cortex): any of the four domains
 
 
 class Task(str, Enum):
@@ -53,7 +53,7 @@ class Severity(str, Enum):
 
 RULE_ID = re.compile(r"^(TF|K8S|DKR|FIN)-(SEC|REL|COST|MNT|COR|PERF|OPS)-[0-9]{3}$")
 DOMAIN_FOR_AGENT = {Agent.TERRAFORM: ("TF",), Agent.K8S: ("K8S",), Agent.DOCKER: ("DKR",), Agent.FINOPS: ("FIN",),
-                    Agent.DEVOPS: ("TF", "K8S", "DKR", "FIN")}
+                    Agent.CORTEX: ("TF", "K8S", "DKR", "FIN")}
 
 TOP_REQUIRED = {"v", "agent", "task", "status", "summary", "findings"}
 TOP_ALLOWED = TOP_REQUIRED | {"est_monthly_saving_usd", "verify", "root_cause", "files_changed", "commands_run", "needs_approval", "next"}
