@@ -9,9 +9,9 @@ One click adds the InfraCortex plugin to Claude Code (terminal, VS Code panel an
 Then, in the Claude Code panel:
 
 ```
-/infracortex:terraform-expert review the KV module in infra/
+/infracortex:terraform-playbook review the KV module in infra/
 /infracortex:team . review
-/infracortex:cortex containerise the app and write the AKS manifest
+/infracortex:devops-expert containerise the app and write the AKS manifest
 ```
 
 Needs the **Claude Code** extension (the button offers to install it) and Git.

@@ -1,5 +1,5 @@
 ---
 type: tool_used
 tool: Agent
-input_match: "terraform-engineer"
+input_match: "terraform-expert"
 ---

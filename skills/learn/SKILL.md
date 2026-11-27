@@ -10,14 +10,14 @@ argument-hint: "[agent | all] [--promote]"
 Data (read-only unless promoting):
 - Mistake journal per agent: `~/.infracortex/learning/<agent>.json` (`count` = times seen, `delivered` = times the agent was told).
 - Lessons per agent: `~/.claude/agent-memory/infracortex-<agent>/MEMORY.md`, section `## Lessons`.
-Agents: terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst (default: all).
+Agents: terraform-expert, kubernetes-expert, docker-expert, finops-expert (default: all).
 
 ## 1. Report (always)
 Per agent: mistakes total · REPEATED (count ≥ 2 after delivery) · lessons count. Table: `agent | mistake (error, short) | count | lesson that covers it (or "none")`. A repeated mistake with no matching lesson, or whose lesson is vague, is the top problem — say which.
 
 ## 2. Promote (only with `--promote` or after the user says yes)
 A lesson qualifies when it is generic, secret-free, and either covers a mistake seen ≥ 2 times or the user confirms it. For each qualifying lesson:
-- Append it to `${CLAUDE_PLUGIN_ROOT}/skills/<domain>-expert/references/learned.md` (create with a `# Learned lessons` heading; one bullet each; dedupe). Domain: terraform-engineer→terraform, k8s-troubleshooter→k8s, docker-engineer→docker, finops-analyst→finops.
+- Append it to `${CLAUDE_PLUGIN_ROOT}/skills/<domain>-expert/references/learned.md` (create with a `# Learned lessons` heading; one bullet each; dedupe). Domain: terraform-expert→terraform, kubernetes-expert→k8s, docker-expert→docker, finops-expert→finops.
 - If `${CLAUDE_PLUGIN_ROOT}` is the installed cache copy, write to the source repo instead (the marketplace directory, e.g. the user's infracortex clone) and tell the user to commit + `claude plugin update infracortex@upinclouds`.
 - Remove the promoted lesson from MEMORY.md (it now ships with the skill), keep MEMORY.md ≤ 60 lines.
 Show the diff of learned.md and stop. Never put IDs, IPs, hostnames, keys or customer names in learned.md.

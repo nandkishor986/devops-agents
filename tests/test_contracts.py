@@ -80,19 +80,19 @@ class ContractGate(unittest.TestCase):
         return json.loads(p.stdout) if p.stdout.strip() else None
 
     def test_valid_passes(self):
-        self.assertIsNone(self.gate("infracortex:terraform-engineer", json.dumps(GOOD)))
+        self.assertIsNone(self.gate("infracortex:terraform-expert", json.dumps(GOOD)))
 
     def test_fenced_valid_passes(self):
-        self.assertIsNone(self.gate("terraform-engineer", "```json\n" + json.dumps(GOOD) + "\n```"))
+        self.assertIsNone(self.gate("terraform-expert", "```json\n" + json.dumps(GOOD) + "\n```"))
 
     def test_prose_blocked(self):
-        self.assertEqual(self.gate("infracortex:docker-engineer", "All fixed!")["decision"], "block")
+        self.assertEqual(self.gate("infracortex:docker-expert", "All fixed!")["decision"], "block")
 
     def test_other_agents_ignored(self):
         self.assertIsNone(self.gate("Explore", "anything"))
 
     def test_no_infinite_loop(self):
-        out = self.gate("infracortex:docker-engineer", "still prose", active=True)
+        out = self.gate("infracortex:docker-expert", "still prose", active=True)
         self.assertNotIn("decision", out)
 
 
@@ -287,11 +287,11 @@ class Learning(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         return json.loads(r.stdout) if r.stdout.strip() else None
 
-    def failure(self, cmd, err, agent="infracortex:terraform-engineer"):
+    def failure(self, cmd, err, agent="infracortex:terraform-expert"):
         return self.hook({"hook_event_name": "PostToolUseFailure", "agent_type": agent, "agent_id": "a",
                           "tool_name": "Bash", "tool_input": {"command": cmd}, "error": err})
 
-    def start(self, agent="infracortex:terraform-engineer"):
+    def start(self, agent="infracortex:terraform-expert"):
         return self.hook({"hook_event_name": "SubagentStart", "agent_type": agent, "agent_id": "a"})
 
     def test_same_error_different_details_is_one_mistake(self):
@@ -316,11 +316,11 @@ class Learning(unittest.TestCase):
 
     def test_contract_rejection_is_recorded(self):
         r = subprocess.run([sys.executable, str(ROOT / "scripts" / "contract_gate.py")], capture_output=True, text=True,
-                           input=json.dumps({"agent_type": "infracortex:docker-engineer",
+                           input=json.dumps({"agent_type": "infracortex:docker-expert",
                                              "last_assistant_message": '{"agent":"docker","version":"v1"}'}),
                            env=os.environ.copy())
         self.assertIn('"block"', r.stdout)
-        ctx = self.start("infracortex:docker-engineer")["hookSpecificOutput"]["additionalContext"]
+        ctx = self.start("infracortex:docker-expert")["hookSpecificOutput"]["additionalContext"]
         self.assertIn("rejected by the contract gate", ctx)
 
     def hud_state(self):
@@ -330,10 +330,10 @@ class Learning(unittest.TestCase):
         os.environ.update(DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off", CLAUDE_CODE_ENTRYPOINT="claude-vscode")
         try:
             self.hook({"hook_event_name": "PreToolUse", "tool_name": "Agent", "cwd": "C:/work/payments-infra",
-                       "tool_input": {"subagent_type": "infracortex:terraform-engineer", "description": "Review KV module"}})
-            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:terraform-engineer", "agent_id": "x1",
+                       "tool_input": {"subagent_type": "infracortex:terraform-expert", "description": "Review KV module"}})
+            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:terraform-expert", "agent_id": "x1",
                        "cwd": "C:/work/payments-infra"})
-            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:terraform-engineer", "agent_id": "x1",
+            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:terraform-expert", "agent_id": "x1",
                        "tool_name": "Read", "tool_input": {"file_path": "C:/work/payments-infra/kv.tf"}})
             card = self.hud_state()["x1"]
             self.assertEqual((card["source"], card["project"], card["task"]), ("VS Code", "payments-infra", "Review KV module"))
@@ -347,12 +347,12 @@ class Learning(unittest.TestCase):
     def test_mcp_tool_calls_show_as_client_card(self):
         os.environ.update(DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off")
         try:
-            base = {"hook_event_name": "McpTool", "agent_type": "terraform-engineer", "tool": "tf_scan",
+            base = {"hook_event_name": "McpTool", "agent_type": "terraform-expert", "tool": "tf_scan",
                     "source": "Copilot (VS Code)", "session": "42", "cwd": "C:/work/demo"}
             self.hook({**base, "phase": "start"})
-            self.assertEqual(self.hud_state()["mcp:42:terraform-engineer"]["status"], "running")
+            self.assertEqual(self.hud_state()["mcp:42:terraform-expert"]["status"], "running")
             self.hook({**base, "phase": "end", "ok": True})
-            card = self.hud_state()["mcp:42:terraform-engineer"]
+            card = self.hud_state()["mcp:42:terraform-expert"]
             self.assertEqual((card["status"], card["source"], card["steps"]), ("done", "Copilot (VS Code)", 1))
         finally:
             os.environ.pop("DEVOPS_HUD_LAUNCH", None)
@@ -373,9 +373,9 @@ class Learning(unittest.TestCase):
 
     def test_handback_report_is_validated_not_rejected(self):
         """VS Code/Desktop agents hand their report back via a tool call; the final message has no JSON."""
-        good = {"v": 1, "agent": "cortex", "task": "review", "status": "WARN", "summary": "ok", "findings": [
+        good = {"v": 1, "agent": "devops", "task": "review", "status": "WARN", "summary": "ok", "findings": [
             {"id": "TF-SEC-004", "sev": "MEDIUM", "file": "a.tf", "line": 1, "issue": "i", "fix": "f"}]}
-        stop = {"agent_type": "infracortex:cortex", "agent_id": "h1", "last_assistant_message": "",
+        stop = {"agent_type": "infracortex:devops-expert", "agent_id": "h1", "last_assistant_message": "",
                 "agent_transcript_path": self._transcript(good)}
         self.assertEqual(self.gate(stop), "")                                   # accepted
         bad = dict(good, summary="x" * 500)
@@ -384,14 +384,14 @@ class Learning(unittest.TestCase):
     def test_card_always_finishes_and_reopens_on_new_work(self):
         os.environ.update(DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off")
         try:
-            bad = {"v": 1, "agent": "cortex", "task": "review", "status": "WARN", "summary": "x" * 500, "findings": []}
-            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:cortex", "agent_id": "c1"})
-            self.hook({"hook_event_name": "SubagentStop", "agent_type": "infracortex:cortex", "agent_id": "c1",
+            bad = {"v": 1, "agent": "devops", "task": "review", "status": "WARN", "summary": "x" * 500, "findings": []}
+            self.hook({"hook_event_name": "SubagentStart", "agent_type": "infracortex:devops-expert", "agent_id": "c1"})
+            self.hook({"hook_event_name": "SubagentStop", "agent_type": "infracortex:devops-expert", "agent_id": "c1",
                        "last_assistant_message": "", "agent_transcript_path": self._transcript(bad)})
             card = self.hud_state()["c1"]
             self.assertEqual((card["status"], card["result"]), ("done", "WARN"))   # never left "re-writing" forever
             self.assertFalse(card["history"][-1]["ok"])
-            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:cortex", "agent_id": "c1",
+            self.hook({"hook_event_name": "PreToolUse", "agent_type": "infracortex:devops-expert", "agent_id": "c1",
                        "tool_name": "Read", "tool_input": {"file_path": "x.tf"}})
             self.assertEqual(self.hud_state()["c1"]["status"], "running")
         finally:
@@ -399,7 +399,7 @@ class Learning(unittest.TestCase):
             os.environ["DEVOPS_HUD"] = "off"
 
     def test_devops_agent_report_spans_domains(self):
-        doc = {"v": 1, "agent": "cortex", "task": "review", "status": "FAIL", "summary": "x", "findings": [
+        doc = {"v": 1, "agent": "devops", "task": "review", "status": "FAIL", "summary": "x", "findings": [
             {"id": "TF-SEC-003", "sev": "HIGH", "file": "a.tf", "line": 1, "issue": "i", "fix": "f"},
             {"id": "DKR-SEC-009", "sev": "CRITICAL", "file": "Dockerfile", "line": 2, "issue": "i", "fix": "f"}]}
         self.assertEqual(vr.validate(doc).errors, [])
@@ -419,7 +419,7 @@ class Learning(unittest.TestCase):
 class CortexWeave(unittest.TestCase):
     """Procedural memory: activity log, harvest queue, capsule contract, versioned library, search/pull."""
 
-    GOOD = {"slug": "fix-azurerm-missing-location", "agents": ["terraform-engineer", "cortex"], "tags": ["terraform", "azurerm"],
+    GOOD = {"slug": "fix-azurerm-missing-location", "agents": ["terraform-expert", "devops-expert"], "tags": ["terraform", "azurerm"],
             "description": "Use when terraform validate fails with 'Missing required argument location' on azurerm resources.",
             "procedure": ["Run terraform validate -no-color and note each resource address.",
                           "Add location = var.location (or the resource group's location) to each one.",
@@ -464,7 +464,7 @@ class CortexWeave(unittest.TestCase):
 
     def test_capsule_contract(self):
         self.assertEqual(self.cw.validate(self.GOOD), [])
-        thin = {"slug": "x", "agents": ["terraform-engineer"], "description": "fix it", "procedure": ["do it"]}
+        thin = {"slug": "x", "agents": ["terraform-expert"], "description": "fix it", "procedure": ["do it"]}
         errs = " ".join(self.cw.validate(thin))
         for part in ("validator", "escalate_when"):
             self.assertIn(part, errs)
@@ -524,14 +524,14 @@ class CortexWeave(unittest.TestCase):
     def test_versioned_save_search_pull(self):
         self.assertEqual(self.cw.save(dict(self.GOOD), ["run1"])["version"], 1)
         self.assertEqual(self.cw.save(dict(self.GOOD, heuristics=["check modules first"]), ["run2"])["version"], 2)
-        self.cw.save({**self.GOOD, "slug": "docker-healthcheck-curl-missing", "agents": ["docker-engineer"],
+        self.cw.save({**self.GOOD, "slug": "docker-healthcheck-curl-missing", "agents": ["docker-expert"],
                       "description": "Use when a Docker HEALTHCHECK fails because curl is not in the image (busybox/alpine).",
                       "tags": ["docker", "healthcheck"]})
         hits = self.cw.search("terraform validate missing location")
         self.assertEqual(hits[0]["slug"], "fix-azurerm-missing-location")
         self.assertEqual(hits[0]["version"], 2)
-        self.assertEqual([h["slug"] for h in self.cw.search("healthcheck curl", agent="docker-engineer")], ["docker-healthcheck-curl-missing"])
-        self.assertEqual(self.cw.search("healthcheck curl", agent="finops-analyst"), [])
+        self.assertEqual([h["slug"] for h in self.cw.search("healthcheck curl", agent="docker-expert")], ["docker-healthcheck-curl-missing"])
+        self.assertEqual(self.cw.search("healthcheck curl", agent="finops-expert"), [])
         md = self.cw.pull("fix-azurerm-missing-location")
         self.assertIn("## Procedure", md)
         self.assertIn("check modules first", md)
@@ -539,7 +539,7 @@ class CortexWeave(unittest.TestCase):
         self.assertEqual((meta["versions"], meta["uses"]), ([1, 2], 1))
 
     def _docker_skill(self, slug: str, description: str, **extra) -> None:
-        self.cw.save({**self.GOOD, "slug": slug, "agents": ["docker-engineer"], "tags": [], "description": description, **extra})
+        self.cw.save({**self.GOOD, "slug": slug, "agents": ["docker-expert"], "tags": [], "description": description, **extra})
 
     def test_search_ranks_by_query_and_excludes_mismatches(self):
         """Competing skills for the same agent, inserted worst-first, so a search that ignored the query
@@ -553,24 +553,24 @@ class CortexWeave(unittest.TestCase):
         self._docker_skill("docker-healthcheck-old-curl-trick",
                            "Use when a Docker HEALTHCHECK needs curl in busybox — superseded, kept for history only.",
                            status="deprecated")
-        slugs = [h["slug"] for h in self.cw.search("healthcheck curl busybox", agent="docker-engineer")]
+        slugs = [h["slug"] for h in self.cw.search("healthcheck curl busybox", agent="docker-expert")]
         self.assertEqual(slugs[0], "docker-healthcheck-curl-missing")                     # best match first
         self.assertLess(slugs.index("docker-healthcheck-curl-missing"), slugs.index("docker-healthcheck-port-mismatch"))
         self.assertNotIn("docker-image-size-multistage", slugs)                         # shares no query term
         self.assertNotIn("docker-healthcheck-old-curl-trick", slugs)                    # deprecated never returned
-        self.assertEqual(self.cw.search("terraform state lock", agent="docker-engineer"), [])  # nothing relevant → empty
-        scores = [h["score"] for h in self.cw.search("healthcheck curl busybox", agent="docker-engineer")]
+        self.assertEqual(self.cw.search("terraform state lock", agent="docker-expert"), [])  # nothing relevant → empty
+        scores = [h["score"] for h in self.cw.search("healthcheck curl busybox", agent="docker-expert")]
         self.assertEqual(scores, sorted(scores, reverse=True))
 
     def test_selector_queues_only_runs_worth_learning(self):
-        self.cw.record_run({"run_id": "clean", "agent": "terraform-engineer", "status": "PASS"}, self.transcript(False))
-        self.cw.record_run({"run_id": "bad", "agent": "terraform-engineer", "status": "FAIL"}, self.transcript(True))
+        self.cw.record_run({"run_id": "clean", "agent": "terraform-expert", "status": "PASS"}, self.transcript(False))
+        self.cw.record_run({"run_id": "bad", "agent": "terraform-expert", "status": "FAIL"}, self.transcript(True))
         self.cw.record_run({"run_id": "ov", "agent": "overseer", "status": "DONE"}, self.transcript(True))
         q = json.loads((Path(self.tmp) / "cortexweave/queue.json").read_text())["items"]
         self.assertEqual([i["run_id"] for i in q], ["bad"])
         self.assertIn("terraform validate", q[0]["failed"][0]["call"])
         self.assertIn("Missing required argument", q[0]["failed"][0]["error"])
-        self.assertEqual(self.cw.stats(1)["agents"]["terraform-engineer"]["runs"], 2)
+        self.assertEqual(self.cw.stats(1)["agents"]["terraform-expert"]["runs"], 2)
         self.cw.save(dict(self.GOOD), ["bad"])
         self.assertEqual(json.loads((Path(self.tmp) / "cortexweave/queue.json").read_text())["items"][0]["state"], "woven")
 
@@ -578,12 +578,12 @@ class CortexWeave(unittest.TestCase):
         env = dict(os.environ, INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="off", DEVOPS_LEARN="off")
         report = {"v": 1, "agent": "terraform", "task": "review", "status": "FAIL", "summary": "1 high", "findings": [
             {"id": "TF-SEC-003", "sev": "HIGH", "file": "kv.tf", "line": 3, "issue": "public", "fix": "pe"}]}
-        d = {"hook_event_name": "SubagentStop", "agent_type": "infracortex:terraform-engineer", "agent_id": "a9",
+        d = {"hook_event_name": "SubagentStop", "agent_type": "infracortex:terraform-expert", "agent_id": "a9",
              "cwd": "C:/work/payments", "last_assistant_message": json.dumps(report), "agent_transcript_path": self.transcript(True)}
         subprocess.run([sys.executable, str(ROOT / "scripts" / "agent_events.py")], input=json.dumps(d), text=True, env=env, check=True)
         day = next((Path(self.tmp) / "cortexweave/activity").glob("*.jsonl"))
         run = json.loads(day.read_text().splitlines()[-1])
-        self.assertEqual((run["agent"], run["status"], run["project"], run["failed_steps"]), ("terraform-engineer", "FAIL", "payments", 1))
+        self.assertEqual((run["agent"], run["status"], run["project"], run["failed_steps"]), ("terraform-expert", "FAIL", "payments", 1))
         self.assertEqual(run["findings_by_sev"], {"HIGH": 1})
 
     # ---- Sourcery review: redaction, reliability, correctness -------------------------------------------------
@@ -591,7 +591,7 @@ class CortexWeave(unittest.TestCase):
         tr = self.write_transcript([("Bash", {"command": "az login --password Hunter2pass99"}, True,
                                      "Error: token ghp_" + "b" * 36 + " rejected for 52.14.200.7")],
                                    first_prompt="deploy with client_secret=abc123XYZ to sub 0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0")
-        self.cw.record_run({"run_id": "r1", "agent": "terraform-engineer", "status": "FAIL", "summary": "api_key: Zx9mQ2wLk8"}, tr)
+        self.cw.record_run({"run_id": "r1", "agent": "terraform-expert", "status": "FAIL", "summary": "api_key: Zx9mQ2wLk8"}, tr)
         stored = "".join(f.read_text(encoding="utf-8") for f in (Path(self.tmp) / "cortexweave").rglob("*.json*"))
         for leak in ("Hunter2pass99", "ghp_bbbb", "52.14.200.7", "abc123XYZ", "0f1e2d3c-4b5a", "Zx9mQ2wLk8"):
             self.assertNotIn(leak, stored)
@@ -600,7 +600,7 @@ class CortexWeave(unittest.TestCase):
     def test_concurrent_writers_lose_nothing(self):
         env = dict(os.environ, INFRACORTEX_HOME=self.tmp)
         code = ("import sys; sys.path.insert(0, sys.argv[1]); import cortexweave as c; "
-                "c.record_run({'run_id': sys.argv[2], 'agent': 'docker-engineer', 'status': 'BLOCKED'})")
+                "c.record_run({'run_id': sys.argv[2], 'agent': 'docker-expert', 'status': 'BLOCKED'})")
         procs = [subprocess.Popen([sys.executable, "-c", code, str(ROOT / "scripts"), f"run{i}"], env=env) for i in range(12)]
         self.assertEqual([pr.wait(60) for pr in procs], [0] * 12)
         self.assertEqual(sorted(i["run_id"] for i in self.queue()), sorted(f"run{i}" for i in range(12)))
@@ -611,10 +611,10 @@ class CortexWeave(unittest.TestCase):
     def test_pending_runs_are_never_dropped(self):
         self.cw.MAX_CLOSED = 3
         for i in range(10):
-            self.cw.record_run({"run_id": f"p{i}", "agent": "finops-analyst", "status": "BLOCKED"})
+            self.cw.record_run({"run_id": f"p{i}", "agent": "finops-expert", "status": "BLOCKED"})
         self.cw.mark([f"p{i}" for i in range(6)], "skipped", "test")
         for i in range(10, 15):
-            self.cw.record_run({"run_id": f"p{i}", "agent": "finops-analyst", "status": "BLOCKED"})
+            self.cw.record_run({"run_id": f"p{i}", "agent": "finops-expert", "status": "BLOCKED"})
         q = self.queue()
         self.assertEqual(sorted(i["run_id"] for i in q if i["state"] == "pending"), sorted(f"p{i}" for i in range(6, 15)))
         self.assertLessEqual(sum(i["state"] != "pending" for i in q), 3)
@@ -632,29 +632,29 @@ class CortexWeave(unittest.TestCase):
         tr = self.write_transcript([("Bash", {"command": "grep -n foo main.tf"}, True, "Exit code 1"),
                                     ("Grep", {"pattern": "location"}, True, "No matches found"),
                                     ("Bash", {"command": "test -f backend.hcl"}, True, "Exit code 1")])
-        run = self.cw.record_run({"run_id": "b1", "agent": "terraform-engineer", "status": "PASS"}, tr)
+        run = self.cw.record_run({"run_id": "b1", "agent": "terraform-expert", "status": "PASS"}, tr)
         self.assertEqual((run["failed_steps"], run["benign_misses"]), (0, 3))
         self.assertFalse((Path(self.tmp) / "cortexweave/queue.json").exists())
 
     def test_task_comes_from_transcript_when_hud_is_off(self):
         tr = self.write_transcript([("Bash", {"command": "terraform validate"}, True, "Error: x")], first_prompt="Review infra/ for KV exposure")
-        self.cw.record_run({"run_id": "h1", "agent": "terraform-engineer", "status": "FAIL", "task": ""}, tr)
+        self.cw.record_run({"run_id": "h1", "agent": "terraform-expert", "status": "FAIL", "task": ""}, tr)
         self.assertEqual(self.queue()[0]["task"], "Review infra/ for KV exposure")
 
     def test_failure_totals_are_not_capped_by_details(self):
         tr = self.write_transcript([("Bash", {"command": f"kubectl get pod p{i}"}, True, f"Error: not found {i}") for i in range(12)])
-        run = self.cw.record_run({"run_id": "f1", "agent": "k8s-troubleshooter", "status": "FAIL"}, tr)
+        run = self.cw.record_run({"run_id": "f1", "agent": "kubernetes-expert", "status": "FAIL"}, tr)
         self.assertEqual((run["failed_steps"], len(run["failed"])), (12, 8))
         self.assertEqual(self.queue()[0]["failed_total"], 12)
 
     def test_repair_finishes_interrupted_saves_and_lost_queue_writes(self):
-        self.cw.record_run({"run_id": "lost", "agent": "docker-engineer", "status": "BLOCKED"})
+        self.cw.record_run({"run_id": "lost", "agent": "docker-expert", "status": "BLOCKED"})
         (Path(self.tmp) / "cortexweave/queue.json").unlink()                 # queue write "lost" after the activity append
         d = Path(self.tmp) / "cortexweave/skills/half-saved"                  # skill file written, meta/index never updated
         d.mkdir(parents=True)
         c = {**self.GOOD, "slug": "half-saved", "version": 1, "status": "active", "provenance": {"runs": ["woven-run"]}}
         (d / "v1.json").write_text(json.dumps(c), encoding="utf-8")
-        q = {"items": [self.cw._queue_item({"run_id": "woven-run", "agent": "terraform-engineer"}, "x")]}
+        q = {"items": [self.cw._queue_item({"run_id": "woven-run", "agent": "terraform-expert"}, "x")]}
         (Path(self.tmp) / "cortexweave/queue.json").write_text(json.dumps(q), encoding="utf-8")
         fixed = self.cw.repair()
         self.assertEqual((fixed["indexed"], fixed["closed"], fixed["requeued"]), (1, 1, 1))
@@ -676,22 +676,22 @@ class CortexWeave(unittest.TestCase):
     def test_activity_retention_and_stats_window(self):
         act = Path(self.tmp) / "cortexweave/activity"
         act.mkdir(parents=True)
-        (act / "2001-01-01.jsonl").write_text(json.dumps({"ts": "2001-01-01T00:00:00+00:00", "agent": "cortex"}) + "\n", encoding="utf-8")
-        self.cw.record_run({"run_id": "n1", "agent": "cortex", "status": "PASS", "findings_by_sev": {"HIGH": 2, "LOW": 1}})
-        self.cw.record_run({"run_id": "n2", "agent": "cortex", "status": "FAIL", "findings_by_sev": {"HIGH": 1}})
+        (act / "2001-01-01.jsonl").write_text(json.dumps({"ts": "2001-01-01T00:00:00+00:00", "agent": "devops-expert"}) + "\n", encoding="utf-8")
+        self.cw.record_run({"run_id": "n1", "agent": "devops-expert", "status": "PASS", "findings_by_sev": {"HIGH": 2, "LOW": 1}})
+        self.cw.record_run({"run_id": "n2", "agent": "devops-expert", "status": "FAIL", "findings_by_sev": {"HIGH": 1}})
         self.assertFalse((act / "2001-01-01.jsonl").exists())                 # old file pruned on a new day
-        s = self.cw.stats(7)["agents"]["cortex"]
+        s = self.cw.stats(7)["agents"]["devops-expert"]
         self.assertEqual((s["runs"], s["findings_by_sev"]), (2, {"HIGH": 3, "LOW": 1}))
 
     def test_recording_failures_are_visible(self):
         (Path(self.tmp) / "cortexweave").mkdir(parents=True)
         (Path(self.tmp) / "cortexweave/activity").write_text("not a directory", encoding="utf-8")   # makes the append fail
         env = dict(os.environ, INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="off", DEVOPS_LEARN="off")
-        d = {"hook_event_name": "SubagentStop", "agent_type": "infracortex:docker-engineer", "agent_id": "e1", "cwd": "C:/w/x",
+        d = {"hook_event_name": "SubagentStop", "agent_type": "infracortex:docker-expert", "agent_id": "e1", "cwd": "C:/w/x",
              "last_assistant_message": json.dumps({"v": 1, "agent": "docker", "task": "review", "status": "PASS", "summary": "ok", "findings": []})}
         r = subprocess.run([sys.executable, str(ROOT / "scripts" / "agent_events.py")], input=json.dumps(d), capture_output=True, text=True, env=env)
         self.assertEqual(r.returncode, 0)                                       # never breaks the agent…
-        self.assertIn("could not record docker-engineer run e1", r.stderr)      # …but says so
+        self.assertIn("could not record docker-expert run e1", r.stderr)      # …but says so
         self.assertIn("could not record", (Path(self.tmp) / "cortexweave/errors.log").read_text(encoding="utf-8"))
 
 
@@ -701,17 +701,17 @@ class ApprovedChanges(unittest.TestCase):
     AA = "-auto" + "-approve"
 
     def test_agents_that_change_things_own_the_apply(self):
-        for name in ("terraform-engineer", "cortex", "k8s-troubleshooter", "docker-engineer"):
+        for name in ("terraform-expert", "devops-expert", "kubernetes-expert", "docker-expert"):
             t = (ROOT / "agents" / f"{name}.md").read_text(encoding="utf-8")
             with self.subTest(name):
                 self.assertIn("## Approved changes (you own the apply)", t)
                 self.assertIn("**you run it**", t)
                 self.assertIn("never claim you can't", t)
                 self.assertIn("Approval is per action", t)
-        tf = (ROOT / "agents" / "terraform-engineer.md").read_text(encoding="utf-8")
+        tf = (ROOT / "agents" / "terraform-expert.md").read_text(encoding="utf-8")
         self.assertIn("apply -input=false <plan>", tf)
         self.assertNotIn("Never run apply/", tf)
-        finops = (ROOT / "agents" / "finops-analyst.md").read_text(encoding="utf-8")
+        finops = (ROOT / "agents" / "finops-expert.md").read_text(encoding="utf-8")
         self.assertNotIn("## Approved changes", finops)                     # stays read-only
 
     def test_guard_still_enforces_the_hard_limits(self):
@@ -732,7 +732,7 @@ class ApprovedChanges(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("mca", ROOT / "scripts" / "make-copilot-agents.py")
         mca = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mca)
-        for name in ("terraform-engineer", "cortex"):
+        for name in ("terraform-expert", "devops-expert"):
             _, doc = mca.convert(ROOT / "agents" / f"{name}.md", "{{INFRACORTEX_ROOT}}")
             with self.subTest(name):
                 self.assertNotIn("ONLY this JSON", doc)
@@ -741,6 +741,74 @@ class ApprovedChanges(unittest.TestCase):
                 self.assertIn("Reply **apply** and I'll run it", doc)
                 self.assertIn("## Approved changes", doc)
                 self.assertIn("{{INFRACORTEX_ROOT}}/scripts/", doc)
+
+
+
+class FiveExperts(unittest.TestCase):
+    EXPERTS = ("terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert")
+
+    def test_five_experts_and_background_overseer(self):
+        names = sorted(f.stem for f in (ROOT / "agents").glob("*.md"))
+        self.assertEqual(names, sorted(self.EXPERTS + ("overseer",)))
+        for e in self.EXPERTS:
+            entry = (ROOT / "skills" / e / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(e):
+                self.assertIn(f"Delegate to the `{e}` subagent", entry)       # /infracortex:<expert> runs the agent
+                self.assertIn("never the raw JSON", entry)
+        for pb in ("terraform-playbook", "kubernetes-playbook", "docker-playbook", "finops-playbook"):
+            self.assertTrue((ROOT / "skills" / pb / "SKILL.md").exists(), pb)
+
+    def test_expert_scopes_match_the_roles(self):
+        tf = (ROOT / "agents" / "terraform-expert.md").read_text(encoding="utf-8")
+        for word in ("Review", "Write", "Provision", "Import", "Refactor", "Diagram", "Azure Verified Modules", ".tftest.hcl"):
+            self.assertIn(word, tf)
+        for ref in ("style-guide.md", "testing.md", "import.md", "modules-refactor.md", "avm.md", "stacks.md", "policy.md"):
+            self.assertTrue((ROOT / "skills/terraform-playbook/references" / ref).exists(), ref)
+        k8s = (ROOT / "agents" / "kubernetes-expert.md").read_text(encoding="utf-8")
+        self.assertIn("Argo CD", k8s)
+        self.assertIn("Helm", k8s)
+        self.assertIn("Study the app", (ROOT / "agents" / "docker-expert.md").read_text(encoding="utf-8"))
+        self.assertIn("costing master", (ROOT / "agents" / "finops-expert.md").read_text(encoding="utf-8"))
+
+    def test_frontmatter_is_valid_yaml(self):
+        """An unquoted value containing ': ' silently drops all frontmatter at runtime."""
+        for f in [*(ROOT / "agents").glob("*.md"), *(ROOT / "skills").glob("*/SKILL.md")]:
+            fm = f.read_text(encoding="utf-8").split("---")[1]
+            for line in fm.splitlines():
+                key, _, val = line.partition(": ")
+                if val and not val.startswith(("'", '"', ">", "|")):
+                    with self.subTest(f=f.name, key=key):
+                        self.assertNotIn(": ", val, f"{f}: quote the {key} value")
+
+
+class MainConversationHud(unittest.TestCase):
+    """A playbook used directly in the main chat (no subagent) still gets a HUD card."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.env = dict(os.environ, INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="on", DEVOPS_HUD_LAUNCH="off", DEVOPS_LEARN="off")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def hook(self, d):
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "agent_events.py")], input=json.dumps(d), text=True, env=self.env, check=True)
+
+    def card(self):
+        return json.loads((Path(self.tmp) / "hud/state.json").read_text(encoding="utf-8"))["agents"].get("main:s1")
+
+    def test_card_follows_the_main_turn(self):
+        base = {"session_id": "s1", "cwd": "C:/work/payments"}
+        self.hook({**base, "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "ls"}})
+        self.assertFalse((Path(self.tmp) / "hud/state.json").exists())          # ordinary chats: no card
+        self.hook({**base, "hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_input": {"skill": "infracortex:terraform-playbook"}})
+        self.hook({**base, "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "terraform validate"}})
+        c = self.card()
+        self.assertEqual((c["type"], c["status"], c["project"], c["steps"]), ("terraform-expert", "running", "payments", 1))
+        self.hook({**base, "hook_event_name": "Stop", "last_assistant_message": "Plan ready: 3 to add."})
+        self.assertEqual((self.card()["status"], self.card()["summary"]), ("done", "Plan ready: 3 to add."))
 
 
 if __name__ == "__main__":

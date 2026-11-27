@@ -37,7 +37,7 @@ from pathlib import Path
 
 HOME = Path(os.environ.get("INFRACORTEX_HOME") or Path.home() / ".infracortex")
 ROOT = HOME / "cortexweave"
-AGENTS = ("terraform-engineer", "k8s-troubleshooter", "docker-engineer", "finops-analyst", "cortex")
+AGENTS = ("terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert")
 SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_CLOSED = 200                    # closed (woven/skipped) queue history kept; pending runs are never dropped
 TRANSCRIPT_TAIL = 2 * 1024 * 1024   # bytes of a transcript we parse (the hook has a 10 s budget)
