@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 HOME = Path(os.environ.get("INFRACORTEX_HOME") or Path.home() / ".infracortex")
 HUD_DIR, LEARN_DIR = HOME / "hud", HOME / "learning"
-AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex|overseer)$")
+AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-expert|kubernetes-expert|docker-expert|finops-expert|devops-expert|overseer)$")
 MAX_MISTAKES, INJECT_TOP = 60, 6
 # failures that are normal control flow, not mistakes (grep/test/diff exit 1)
 BENIGN = re.compile(r"^\s*(grep|rg|test|\[|diff|cmp|command -v|which|ls)\b")
@@ -262,6 +262,55 @@ def on_mcp(d: dict, agent: str) -> None:
         ensure_hud()
 
 
+PLAYBOOK_AGENT = {"terraform-playbook": "terraform-expert", "kubernetes-playbook": "kubernetes-expert",
+                  "docker-playbook": "docker-expert", "finops-playbook": "finops-expert", "azure-diagrams": "terraform-expert"}
+
+
+def on_main(d: dict, ev: str) -> None:
+    """Work done in the main conversation (no subagent): a card starts when an InfraCortex playbook skill is loaded,
+    follows that session's tool calls, and finishes when the turn ends (Stop)."""
+    sid = str(d.get("session_id") or "")
+    if not sid:
+        return
+    cid = f"main:{sid}"
+    tool, inp = str(d.get("tool_name", "")), d.get("tool_input") or {}
+    if ev == "PreToolUse" and tool == "Skill":
+        m = re.match(r"^(?:infracortex:)?([\w-]+)$", str(inp.get("skill") or inp.get("command") or ""))
+        agent = PLAYBOOK_AGENT.get(m.group(1)) if m else None
+        if agent:
+            def start(a: dict) -> None:
+                a[cid] = {"type": agent, "status": "running", "started": time.time(), "seen": time.time(), "steps": 0,
+                          "errors": 0, "history": [], "action": f"using {m.group(1)}", "task": "main conversation",
+                          "source": source(), "project": Path(str(d.get("cwd") or ".")).name}
+            hud(start)
+            ensure_hud()
+        return
+    try:                                         # cheap exit for sessions without an InfraCortex card
+        state = json.loads((HUD_DIR / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    card = state.get("agents", {}).get(cid)
+    if not card or card.get("ended"):
+        return
+
+    def upd(a: dict) -> None:
+        e = a.get(cid)
+        if not e:
+            return
+        e["seen"] = time.time()
+        if ev == "PreToolUse":
+            e["steps"] = e.get("steps", 0) + 1
+            _step(e, short_action(tool, inp))
+        elif ev == "PostToolUseFailure" and not d.get("is_interrupt"):
+            e["errors"] = e.get("errors", 0) + 1
+            if e.get("history"):
+                e["history"][-1]["ok"] = False
+        elif ev == "Stop":
+            e.update(status="done", result="DONE", ended=time.time(), action="finished",
+                     summary=" ".join(str(d.get("last_assistant_message") or "").split())[:140])
+    hud(upd)
+
+
 def on_delegate(d: dict) -> None:
     """Main thread is about to start one of our agents: remember the task description for its card."""
     inp = d.get("tool_input") or {}
@@ -393,11 +442,13 @@ def main() -> int:
             pass
         return 0
     if not agent:
-        if ev == "PreToolUse" and d.get("tool_name") in ("Agent", "Task"):
-            try:
+        try:
+            if ev == "PreToolUse" and d.get("tool_name") in ("Agent", "Task"):
                 on_delegate(d)
-            except Exception:  # noqa: BLE001
-                pass
+            elif ev in ("PreToolUse", "PostToolUseFailure", "Stop"):
+                on_main(d, ev)           # InfraCortex playbook used directly in the main conversation
+        except Exception:  # noqa: BLE001
+            pass
         return 0
     try:
         out = {"SubagentStart": on_start, "PreToolUse": on_pre, "PostToolUseFailure": on_fail,

@@ -15,11 +15,11 @@ const TOOLS = [
   { id: "git", label: "Git (+ Git Bash on Windows)", need: "required", bins: ["git"], win: "Git.Git", mac: "git", apt: "git", why: "scripts run in bash; Claude Code installs plugins with git" },
   { id: "python", label: "Python 3", need: "required", bins: WIN ? ["python"] : ["python3"], win: "Python.Python.3.12", mac: "python@3.12", apt: "python3 python3-pip", why: "hooks, guard, report validator, CortexWeave" },
   { id: "jq", label: "jq", need: "required", bins: ["jq"], win: "jqlang.jq", mac: "jq", apt: "jq", why: "scanner scripts parse JSON" },
-  { id: "terraform", label: "Terraform", need: "recommended", bins: ["terraform"], win: "Hashicorp.Terraform", mac: "hashicorp/tap/terraform", why: "fmt/validate for terraform-engineer" },
+  { id: "terraform", label: "Terraform", need: "recommended", bins: ["terraform"], win: "Hashicorp.Terraform", mac: "hashicorp/tap/terraform", why: "fmt/validate for terraform-expert" },
   { id: "tflint", label: "tflint", need: "recommended", bins: ["tflint"], win: "TerraformLinters.tflint", mac: "tflint", why: "Terraform lint rules" },
   { id: "trivy", label: "Trivy", need: "recommended", bins: ["trivy"], win: "AquaSecurity.Trivy", mac: "trivy", why: "IaC + image security scans" },
-  { id: "hadolint", label: "hadolint", need: "recommended", bins: ["hadolint"], win: "hadolint.hadolint", mac: "hadolint", why: "Dockerfile lint for docker-engineer" },
-  { id: "kubectl", label: "kubectl", need: "recommended", bins: ["kubectl"], win: "Kubernetes.kubectl", mac: "kubectl", why: "cluster triage for k8s-troubleshooter" },
+  { id: "hadolint", label: "hadolint", need: "recommended", bins: ["hadolint"], win: "hadolint.hadolint", mac: "hadolint", why: "Dockerfile lint for docker-expert" },
+  { id: "kubectl", label: "kubectl", need: "recommended", bins: ["kubectl"], win: "Kubernetes.kubectl", mac: "kubectl", why: "cluster triage for kubernetes-expert" },
   { id: "az", label: "Azure CLI", need: "recommended", bins: ["az"], win: "Microsoft.AzureCLI", mac: "azure-cli", why: "Azure lookups + FinOps" },
   { id: "docker", label: "Docker", need: "optional", bins: ["docker"], win: "Docker.DockerDesktop", mac: "--cask docker", apt: "docker.io", why: "Docker verify loop, Terraform MCP" },
   { id: "infracost", label: "Infracost", need: "optional", bins: ["infracost"], win: "Infracost.Infracost", mac: "infracost", why: "Terraform cost diffs" },
@@ -166,7 +166,7 @@ async function cmdEnableClaude() {
     if (/infracortex@/i.test(list.text)) {
       await runClaude(bin, ["plugin", "marketplace", "update", MARKETPLACE.name]);
       const up = await runClaude(bin, ["plugin", "update", MARKETPLACE.plugin]);
-      vscode.window.showInformationMessage(`InfraCortex is enabled in Claude Code${up.ok ? " and up to date" : ""}. Restart the Claude Code panel, then try /infracortex:terraform-expert or /infracortex:team.`);
+      vscode.window.showInformationMessage(`InfraCortex is enabled in Claude Code${up.ok ? " and up to date" : ""}. Restart the Claude Code panel, then try /infracortex:terraform-playbook or /infracortex:team.`);
       return true;
     }
     const mk = await runClaude(bin, ["plugin", "marketplace", "list"]);
@@ -176,7 +176,7 @@ async function cmdEnableClaude() {
     }
     const inst = await runClaude(bin, ["plugin", "install", MARKETPLACE.plugin, "--scope", "user"]);
     if (!inst.ok) { vscode.window.showErrorMessage("InfraCortex: plugin install failed. See Output → InfraCortex."); return false; }
-    vscode.window.showInformationMessage("InfraCortex is enabled in Claude Code. Restart the Claude Code panel, then try /infracortex:terraform-expert or /infracortex:team.");
+    vscode.window.showInformationMessage("InfraCortex is enabled in Claude Code. Restart the Claude Code panel, then try /infracortex:terraform-playbook or /infracortex:team.");
     return true;
   });
 }
@@ -286,7 +286,7 @@ function activate(ctx, channel) {
   reg("infracortex.enableClaude", cmdEnableClaude);
   reg("infracortex.openCopilotAgent", async () => {
     await vscode.commands.executeCommand("workbench.action.chat.open", { mode: "agent" }).then(undefined, () => vscode.commands.executeCommand("workbench.action.chat.open"));
-    vscode.window.showInformationMessage("In Copilot Chat, pick terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst or cortex from the agent dropdown.");
+    vscode.window.showInformationMessage("In Copilot Chat, pick terraform-expert, kubernetes-expert, docker-expert, finops-expert or devops-expert from the agent dropdown.");
   });
   reg("infracortex.getStarted", () => vscode.commands.executeCommand("workbench.action.openWalkthrough", `${ctx.extension ? ctx.extension.id : "upinclouds.infracortex"}#infracortex.setup`, false));
   // background: status bar check + first-run walkthrough + cleanup offer (never blocks activation)

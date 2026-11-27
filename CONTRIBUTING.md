@@ -12,7 +12,7 @@ Thanks for helping! This project is a Claude Code plugin (agents, skills, hooks,
 ## Layout
 | Path | What |
 |---|---|
-| `agents/` | the five agents (terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, cortex) |
+| `agents/` | the five agents (terraform-expert, kubernetes-expert, docker-expert, finops-expert, devops-expert) |
 | `skills/` | expert skills (+ `references/`, `references/learned.md`), slash commands (`tf-review`, `team`, `learn`, …) |
 | `scripts/` | scanners (`tf-scan.sh`, `k8s-triage.sh`, …), `guard.py`, `contract_gate.py`, `agent_events.py` (HUD + learning), `hud.ps1`/`hud.py` |
 | `hooks/hooks.json` | guard, contract gate, HUD and learning hooks |

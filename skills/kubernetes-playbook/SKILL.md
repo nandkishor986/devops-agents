@@ -1,5 +1,5 @@
 ---
-name: k8s-expert
+name: kubernetes-playbook
 description: Kubernetes (AKS-first) troubleshooting, manifest/Helm/Kustomize review and authoring, and cluster setup guidance. Use for CrashLoopBackOff, Pending, OOMKilled, ImagePull errors, networking/DNS/ingress issues, probe failures, RBAC, or writing/reviewing YAML.
 ---
 

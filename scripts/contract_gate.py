@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_report as vr  # noqa: E402
 
-AGENTS = re.compile(r"^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$")
+AGENTS = re.compile(r"^(infracortex:)?(terraform-expert|kubernetes-expert|docker-expert|finops-expert|devops-expert)$")
 
 
 def extract(msg: str) -> object:

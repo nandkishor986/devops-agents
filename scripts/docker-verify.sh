@@ -5,7 +5,7 @@
 #                    [-e KEY=VAL ...] [--build-arg K=V ...] [--hardened] [--keep] [--no-build]
 #   --hardened  run with --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges (what prod should survive)
 # Output: compact lines.  RESULT PASS|FAIL  ·  DIAG <CODE> <evidence>  ·  HINT <fix>.   Exit: 0 pass, 1 fail, 2 usage/env.
-# DIAG codes map to skills/docker-expert/references/healthcheck-fixes.md
+# DIAG codes map to skills/docker-playbook/references/healthcheck-fixes.md
 set -uo pipefail
 DF="Dockerfile"; CTX=""; TAG=""; PORT=""; HPATH="/"; TIMEOUT=60; HARD=0; KEEP=0; BUILD=1; ENVS=(); BARGS=()
 while [[ $# -gt 0 ]]; do case "$1" in

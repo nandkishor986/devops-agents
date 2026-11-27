@@ -14,16 +14,16 @@ cloud (Azure or AWS — from the request: EC2/VPC/S3/IAM = AWS) · region · env
 ## 1. Pick agents by use case
 | Request contains | Agents (in order) |
 |---|---|
-| create/modify Azure resources | `terraform-engineer` → `finops-analyst` |
-| + containers / images | add `docker-engineer` before finops if a Dockerfile is involved |
-| + AKS workloads / manifests | add `k8s-troubleshooter` (manifests) after terraform |
-| "how much will X cost" only | `finops-analyst` alone (no code) |
-| "review/fix existing IaC" | `terraform-engineer` alone; finops only if SKUs/scale change |
+| create/modify Azure resources | `terraform-expert` → `finops-expert` |
+| + containers / images | add `docker-expert` before finops if a Dockerfile is involved |
+| + AKS workloads / manifests | add `kubernetes-expert` (manifests) after terraform |
+| "how much will X cost" only | `finops-expert` alone (no code) |
+| "review/fix existing IaC" | `terraform-expert` alone; finops only if SKUs/scale change |
 
-## 2. terraform-engineer brief
+## 2. terraform-expert brief
 "task=implement. Create <resources> in <region> for <env> under <dir>. Azure: follow azure-patterns (private endpoint + private DNS zone group, public access off, TLS1_2, tags, prevent_destroy for prod). AWS: follow aws-patterns secure EC2 baseline (private subnet, no public IP, no SSH ingress, SSM instance profile, IMDSv2, encrypted gp3, AMI via SSM parameter, monitoring). Verify gate required. Do NOT apply." → keep its report (files_changed, verify, needs_approval).
 
-## 3. finops-analyst brief
+## 3. finops-expert brief
 "task=review (cost estimate) for <dir> in <region>: monthly cost of each new resource. Use Infracost if configured (`finops-scan.sh --tf <dir>`), else per resource: Azure → `az-price.sh` presets/queries; AWS → `aws-price.sh ec2 <type> --region <r>` and `aws-price.sh ebs gp3 --gb N` (+ NAT gateway / endpoints if created), with stated usage assumptions. Flag cheaper alternatives (e.g. LRS vs ZRS for dev, one PE per needed subresource only)."
 
 Report all money in ${user_config.currency} (`az-price.sh --currency ${user_config.currency}`; Infracost USD × `az-price.sh fx ${user_config.currency}`).

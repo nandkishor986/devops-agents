@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/nandkishor986/infracortex/actions/workflows/ci.yml/badge.svg)](https://github.com/nandkishor986/infracortex/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Token-lean AI agents for **Terraform (Azure-first, AWS)**, **Kubernetes/AKS**, **Docker** and **FinOps** that review, fix and build infrastructure code, return **typed reports**, refuse destructive commands without your approval, **learn from their own mistakes**, and keep a shared skill memory (**CortexWeave**) curated by a monitor agent (**overseer**). A live on-screen HUD shows which agent is working and what it's doing.
+Five token-lean AI experts — **Terraform**, **Docker**, **Kubernetes**, **FinOps** and an all-in-one **DevOps** expert — that review, fix and build infrastructure code, return **typed reports**, refuse destructive commands without your approval, **learn from their own mistakes**, and keep a shared skill memory (**CortexWeave**) curated by a monitor agent (**overseer**). A live on-screen HUD shows which agent is working and what it's doing.
 
 Built by Nandu · upinclouds · MIT licensed · contributions welcome.
 
@@ -12,14 +12,14 @@ Built by Nandu · upinclouds · MIT licensed · contributions welcome.
 
 ## The agents
 
-| Agent | Does | Ask it / command |
+| Expert | Does | Ask it |
 |---|---|---|
-| `terraform-engineer` | Review, write, refactor, debug Terraform (azurerm/azapi, aws 6.x), state, IaC pipelines with OIDC | `/infracortex:tf-review ./infra` · "create a private AKS module with workload identity" |
-| `k8s-troubleshooter` | Root-cause failing pods (CrashLoop, Pending, OOMKilled, ImagePull), networking, RBAC; write manifest fixes | `/infracortex:k8s-debug payments api crashloop` |
-| `docker-engineer` | Dockerfile/Compose review, hardening, image size, CVEs; diagnose → fix → verify loop | `/infracortex:docker-audit ./Dockerfile` · "my container goes unhealthy, fix it" |
-| `finops-analyst` | Waste, rightsizing, Infracost diffs, price lookups (Azure/AWS) — read-only | `/infracortex:finops-scan --tf ./infra` · "what does a D4s_v5 cost in eastus2?" |
-| `cortex` | All four skill sets in one context, for small/medium cross-domain tasks | `/infracortex:cortex containerise the app, write the AKS manifest and ACR Terraform` |
-| `overseer` | Monitors every agent's runs and weaves the worth-learning ones into CortexWeave skills | `/infracortex:weave` · "what have my agents been doing?" |
+| **Terraform Expert** `terraform-expert` | Reviews and writes Terraform (style, security, modules, `.tftest.hcl` tests, policy), **provisions** infrastructure (plan → your "apply" → it applies and verifies), imports existing resources, refactors into modules with `moved` blocks, Azure Verified Modules, Stacks — and draws **architecture diagrams** (official Azure icons, `.drawio`/PNG) | `/infracortex:terraform-expert review ./infra` · `… create a private AKS cluster in eastus2 and diagram it` |
+| **Docker Expert** `docker-expert` | **Studies your application** and writes standard, secure Dockerfiles (multi-stage, pinned, non-root, healthcheck, `.dockerignore`, Compose), builds and runs containers, troubleshoots build/runtime/health failures, image size and CVEs | `/infracortex:docker-expert containerise this app` · `… my container goes unhealthy, fix it` |
+| **Kubernetes Expert** `kubernetes-expert` | Writes manifests, **Helm** charts and Kustomize overlays, works with **Argo CD** (Applications, ApplicationSets, sync waves, health), troubleshoots clusters (CrashLoop, Pending, OOMKilled, ImagePull, DNS/ingress, RBAC) | `/infracortex:kubernetes-expert write a Helm chart for this service` · `… why is payments crashlooping?` |
+| **FinOps Expert** `finops-expert` | The **costing master**: monthly estimates for planned Terraform, bill and spike analysis, waste, rightsizing, reservations/savings plans, budgets and tagging — read-only | `/infracortex:finops-expert what will ./infra cost per month?` |
+| **DevOps Expert** `devops-expert` | All of the above in one agent, end to end: app → Dockerfile → Kubernetes/Helm/Argo CD → Terraform → cost → diagram | `/infracortex:devops-expert containerise the app, deploy it to AKS with Argo CD, price it` |
+| `overseer` *(background)* | Monitors every expert's runs and weaves the worth-learning ones into CortexWeave skills | `/infracortex:weave` |
 
 More: `/infracortex:team [dir] [goal]` runs the specialists **in parallel** and routes their hand-offs · `/infracortex:provision <what>` creates infra end to end (code + verify + price) · `/infracortex:learn` reviews lessons · diagrams: "draw our network from ./infra" (official Azure icons, `.drawio`/PNG).
 
@@ -42,7 +42,7 @@ Optional scanners (skipped if missing): `terraform tflint trivy checkov infracos
 **One click (recommended):** install the **InfraCortex** extension in VS Code — from the Marketplace once published, or now from a release `.vsix` (Extensions → ⋯ → *Install from VSIX…*). The *Get started* walkthrough opens and:
 1. **Install missing tools** — checks and installs Git (+ Git Bash), Python, jq and the scanners with winget / Homebrew / apt;
 2. the agents, skills and MCP tools are **already in GitHub Copilot** (Agent mode → pick an agent);
-3. **Enable in Claude Code** — one click adds the plugin, then use `/infracortex:terraform-expert …`, `/infracortex:team . review`.
+3. **Enable in Claude Code** — one click adds the plugin, then use `/infracortex:terraform-playbook …`, `/infracortex:team . review`.
 
 **Claude Code only (no VS Code):**
 ```text
@@ -69,9 +69,9 @@ Works the same in the **terminal (`claude`)**, the **VS Code Claude Code panel**
 Try without installing: `claude --plugin-dir ./infracortex`. No marketplace: `./install.sh` (copies into `~/.claude`; `--no-mcp`, `--no-hook`, `--uninstall`).
 
 **Three ways to use an agent**
-1. **Slash commands** (cheapest, predictable): `/infracortex:tf-review ./infra`, `/infracortex:team . security`, `/infracortex:cortex <task>`, `/infracortex:weave`.
+1. **Slash commands** (cheapest, predictable): `/infracortex:tf-review ./infra`, `/infracortex:team . security`, `/infracortex:devops-expert <task>`, `/infracortex:weave`.
 2. **Plain language** — Claude delegates automatically: "review the Terraform in infra/ for security", "why is the payments pod crashlooping?".
-3. **By name**: `@agent-infracortex:terraform-engineer review modules/aks` or "use cortex to …".
+3. **By name**: `@agent-infracortex:terraform-expert review modules/aks` or "use devops-expert to …".
 
 **What you get in Claude Code (and not elsewhere):** subagents with their own context, persistent memory per agent, the **guard hook** (denies `terraform destroy`, `apply -auto-approve`, `az group delete`, namespace deletes…; asks before any apply), the **contract gate** (typed AgentReport), **self-learning**, **CortexWeave** harvesting, and the full-detail HUD. Check MCP servers with `/mcp` (`terraform`, `azure`, `kubernetes`).
 
@@ -79,7 +79,7 @@ Try without installing: `claude --plugin-dir ./infracortex`. No marketplace: `./
 
 ## Use in GitHub Copilot (VS Code)
 
-**With the InfraCortex extension (recommended):** nothing to configure. The extension contributes the agents (`chatAgents`), the expert skills (`chatSkills`) and the InfraCortex MCP server (`mcpServerDefinitionProviders`, run on VS Code's own Node). Open Copilot Chat → **Agent** mode → pick **terraform-engineer**, **k8s-troubleshooter**, **docker-engineer**, **finops-analyst** or **cortex** → ask, e.g. "review infra/ for security". Copilot shows each tool call with its input and output.
+**With the InfraCortex extension (recommended):** nothing to configure. The extension contributes the agents (`chatAgents`), the expert skills (`chatSkills`) and the InfraCortex MCP server (`mcpServerDefinitionProviders`, run on VS Code's own Node). Open Copilot Chat → **Agent** mode → pick **terraform-expert**, **kubernetes-expert**, **docker-expert**, **finops-expert** or **devops-expert** → ask, e.g. "review infra/ for security". Copilot shows each tool call with its input and output.
 
 **Manual setup (without the extension):**
 1. Build the MCP server (Node 18+): `bash extensions/build.sh`, unzip `dist/infracortex-<ver>.mcpb` to `~/.infracortex/mcp-server`, and add it to VS Code's user `mcp.json` (Command Palette → *MCP: Open User Configuration*):
@@ -120,6 +120,13 @@ Agents already learn one-line **lessons** from their own mistakes. CortexWeave g
 - **Use:** every agent's first step is a CortexWeave search; it pulls a skill only when one clearly fits. Nothing is injected.
 - **Inspect:** `/infracortex:weave list`, `/infracortex:weave pull <slug>`, or the files under `~/.infracortex/cortexweave/skills/`.
 - **Share:** a generic, secret-free skill that helped you is a great contribution (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+## Works with HashiCorp's Terraform skills
+The Terraform Expert's playbook (style guide, `terraform test`, search & import, module refactoring with `moved`, Azure Verified Modules, Stacks, policy) is informed by HashiCorp's open [agent-skills](https://github.com/hashicorp/agent-skills) (MPL-2.0) — written independently, no files copied. For provider development, exact Stacks and Terraform Policy syntax, install HashiCorp's plugin alongside; the Terraform Expert uses those skills when present:
+```text
+/plugin marketplace add hashicorp/agent-skills
+/plugin install terraform@hashicorp
+```
 
 ## More features
 - **Self-learning:** failed commands, guard blocks and rejected reports are recorded per agent; the next run is told about new or REPEATED mistakes and writes a LESSON to its memory; `/infracortex:learn all --promote` moves proven lessons into `skills/*/references/learned.md`.
@@ -172,9 +179,9 @@ Everything runs locally with your own credentials. Stored on your machine only: 
 You: create a t3.micro EC2 in ap-south-1 for dev, private subnet subnet-0abc in vpc-0def, considering security
 ```
 1. **provision** confirms the account (`aws sts get-caller-identity`) and fills gaps (region, env, subnet).
-2. **terraform-engineer** writes `infra/<name>/` from the secure baseline in `skills/terraform-expert/references/aws-patterns.md`: aws provider `~> 6.0`, private subnet, no public IP, no SSH (SSM Session Manager), IMDSv2 required, encrypted gp3 root, scoped instance profile, AMI from the SSM parameter, monitoring.
+2. **terraform-expert** writes `infra/<name>/` from the secure baseline in `skills/terraform-playbook/references/aws-patterns.md`: aws provider `~> 6.0`, private subnet, no public IP, no SSH (SSM Session Manager), IMDSv2 required, encrypted gp3 root, scoped instance profile, AMI from the SSM parameter, monitoring.
 3. Verify gate: `terraform fmt/validate` + `tf-scan.sh` must be clean, then `terraform plan`.
-4. **finops-analyst** prices it (`aws-price.sh`, converted to your currency).
+4. **finops-expert** prices it (`aws-price.sh`, converted to your currency).
 5. One summary (plan + monthly cost). **Nothing is created until you approve.**
 
 Setup: `aws configure sso && aws sso login --profile dev` (no static keys); optional official AWS MCP: `/plugin install aws-core@claude-plugins-official`.
@@ -206,7 +213,7 @@ MCP server security: paths are locked inside the workspace, scripts run with arg
 
 `HC_CMD_MISSING · HC_PORT_MISMATCH · HC_CONN_REFUSED · HC_TIMEOUT · HC_HTTP_ERROR · HC_NEVER_PASSED · BIND_LOCALHOST · RUN_FAIL · EXIT_127/126/OOM · EXITED_CLEAN · RO_FS · PERMISSION · BUILD_COPY_MISSING · BUILD_CMD_NOT_FOUND · BUILD_NETWORK · BUILD_ARCH`
 
-The docker-engineer applies one fix per iteration from `references/healthcheck-fixes.md`, re-verifies (up to 3 times), then re-runs with `--hardened` (read-only filesystem, all capabilities dropped, no-new-privileges). It is **forbidden** to "fix" by removing the HEALTHCHECK, running as root, adding privileges, installing curl into distroless images, or masking failures. If the real fix needs app code, it reports BLOCKED with the exact change.
+The docker-expert applies one fix per iteration from `references/healthcheck-fixes.md`, re-verifies (up to 3 times), then re-runs with `--hardened` (read-only filesystem, all capabilities dropped, no-new-privileges). It is **forbidden** to "fix" by removing the HEALTHCHECK, running as root, adding privileges, installing curl into distroless images, or masking failures. If the real fix needs app code, it reports BLOCKED with the exact change.
 
 `tests/docker_fix_loop.sh` proves it against real containers: 7 broken Dockerfiles go diagnosed → fixed → PASS (also runs in CI).
 
@@ -312,9 +319,9 @@ Before installing third-party code, read it. The draw.io harness is about 4k lin
 ## Layout
 ```
 .claude-plugin/{plugin,marketplace}.json   .mcp.json   hooks/hooks.json
-agents/      terraform-engineer · k8s-troubleshooter · docker-engineer · finops-analyst · cortex (all-in-one) · overseer (monitor)
-skills/      terraform-expert · k8s-expert · docker-expert · finops-expert · azure-diagrams   (knowledge + references/)
-             provision · team · cortex · weave · learn · tf-review · k8s-debug · docker-audit · finops-scan (entry points)
+agents/      terraform-expert · kubernetes-expert · docker-expert · finops-expert · devops-expert (all-in-one) · overseer (monitor)
+skills/      terraform-playbook · kubernetes-playbook · docker-playbook · finops-playbook · azure-diagrams   (knowledge + references/)
+             provision · team · devops-expert · weave · learn · tf-review · k8s-debug · docker-audit · finops-scan (entry points)
 scripts/     tf-scan · tf_inspect.py · k8s-triage · docker-audit · docker-verify · finops-scan · az-price · azdiagram.py
              guard.py · jev_judge.py · contract_gate.py · validate_report.py · build-desktop
              agent_events.py (HUD + learning hooks) · cortexweave.py (skill memory) · hud.ps1/hud.py · make-copilot-agents.py
