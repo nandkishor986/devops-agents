@@ -4,6 +4,12 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [Unreleased]
 
+## [3.3.0] — approved deployments
+### Added
+- After the user says "apply", the experts deploy end to end, not just `terraform apply`: Helm (`upgrade --install --atomic --wait`), Argo CD (`app sync` + `app wait --health`), Docker build / `compose up` / `run` / push / `az acr build`, and Azure app deploys. The DevOps and Terraform Experts propose a **numbered deploy plan**; one approval runs exactly those steps in order, verifying each and stopping at the first failure.
+### Fixed
+- Guard: `argocd app sync/delete/rollback`, `flux reconcile`, `docker compose down -v`, and `az … deploy/build/import/swap/upgrade/push` ran without a confirmation; they now ask. Read-only commands still pass.
+
 ## [3.2.0] — five experts
 ### Changed (breaking names)
 - Agents are now five experts: **terraform-expert** (was terraform-engineer), **kubernetes-expert** (k8s-troubleshooter), **docker-expert** (docker-engineer), **finops-expert** (finops-analyst), **devops-expert** (cortex). `overseer` stays as the background monitor.

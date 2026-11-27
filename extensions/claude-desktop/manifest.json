@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "infracortex",
   "display_name": "InfraCortex (upinclouds)",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Terraform (Azure), Kubernetes, Docker and FinOps tools for Claude Desktop: scans, Docker fix-loop diagnostics, INR Azure pricing, official-icon Azure diagrams.",
   "long_description": "Runs the InfraCortex toolkit's scanners on YOUR machine as MCP tools: tf_scan, k8s_triage (read-only), docker_audit, docker_verify (build → run → health → DIAG codes), finops_scan (az login), az_price (Azure Retail Prices in INR, no login), azure_diagram (.drawio/PNG with official Azure icons), validate_report and check_command. Paths are restricted to the workspace folder you choose; scripts run with argument arrays, never through a shell string.",
   "author": { "name": "Nandu", "url": "https://github.com/nandkishor986" },

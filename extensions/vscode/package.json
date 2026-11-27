@@ -2,7 +2,7 @@
   "name": "infracortex",
   "displayName": "InfraCortex — DevOps AI agents for Copilot & Claude Code",
   "description": "One-click DevOps agents: Terraform (Azure/AWS), Kubernetes, Docker and FinOps experts in GitHub Copilot and Claude Code, with security scanners, a destructive-command guard, self-learning skill memory (CortexWeave) and Azure diagrams.",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "publisher": "upinclouds",
   "license": "MIT",
   "icon": "media/icon.png",

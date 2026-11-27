@@ -43,6 +43,8 @@ Store only durable facts: `- cluster <ctx>: <fact>` (AKS version, ingress=AGIC/n
 ## Approved changes (you own the apply)
 When the user explicitly approves in this conversation ("apply", "go ahead", "yes, apply it"), **you run it** — don't hand the command back, and never claim you can't do billable or production steps (cost and risk were shown; the decision is the user's). Only what was approved:
 - **Kubernetes:** `kubectl apply --dry-run=server -f <the files you changed>` → `kubectl apply -f …` → `kubectl rollout status` / `get` to verify.
+- **Helm:** `helm lint` + `helm template … | kubeconform` (and `helm diff upgrade` if the plugin exists) were in your summary → `helm upgrade --install <release> <chart> -n <ns> -f values-<env>.yaml --atomic --wait --timeout 10m` → `kubectl rollout status` / `helm status`.
+- **Argo CD (GitOps):** the change lives in Git — commit and push it only if the user approved that too — then `argocd app sync <app>` → `argocd app wait <app> --health --timeout 600`. Never `kubectl apply` resources Argo manages (it reverts them).
 - Approval is per action and per plan: "plan looks good" isn't "apply"; approving a plan approves nothing else. If it deletes or replaces stateful workloads (StatefulSets, PVCs) and the user's message didn't mention it, restate them and ask once more.
 - The client still shows the exact command for one confirmation click — expected, not a refusal.
 - Long runs (AKS/EKS 10–20 min): use a long timeout / background run and report progress. Afterwards verify (`terraform output`, `state list`, `kubectl get nodes` …) and report `DONE` with `verify`.

@@ -862,5 +862,38 @@ class CopilotHud(unittest.TestCase):
                 self.assertIn('phase: "done"', doc)
 
 
+
+class ApprovedDeploys(unittest.TestCase):
+    """'apply' after review = the agent deploys end to end; every deploy step still gets one confirmation click."""
+
+    def read(self, name):
+        return (ROOT / "agents" / f"{name}.md").read_text(encoding="utf-8")
+
+    def test_agents_cover_the_whole_deployment(self):
+        k8s, docker, devops, tf = (self.read(n) for n in ("kubernetes-expert", "docker-expert", "devops-expert", "terraform-expert"))
+        for needle in ("helm upgrade --install", "--atomic", "argocd app sync", "argocd app wait"):
+            self.assertIn(needle, k8s)
+        for needle in ("docker compose up -d --build", "docker push", "az acr build"):
+            self.assertIn(needle, docker)
+        for needle in ("**A whole deployment:**", "numbered deploy plan", "stop at the first failure", "nothing else",
+                       "helm upgrade --install", "argocd app sync", "az webapp deploy"):
+            self.assertIn(needle, devops)
+        self.assertIn("**A whole deployment:**", tf)
+
+    def test_guard_asks_for_every_deploy_and_lets_reads_through(self):
+        d = lambda c: (guard.decide(c, use_jev=False) or ("allow",))[0]
+        for c in ("helm upgrade --install api ./chart -n app --atomic", "argocd app sync payments", "argocd app delete payments",
+                  "argocd app rollback payments 3", "docker compose down -v", "docker push acr.io/api:1.0",
+                  "az acr build -r acr -t api:1.0 .", "az webapp deploy -g rg -n app --src-path app.zip",
+                  "az webapp deployment slot swap -g rg -n app --slot staging", "az aks upgrade -g rg -n aks -k 1.31",
+                  "flux reconcile kustomization apps"):
+            with self.subTest(c):
+                self.assertEqual(d(c), "ask")
+        for c in ("argocd app get payments", "argocd app diff payments", "kubectl rollout status deploy/api",
+                  "az acr list -o table", "az webapp show -g rg -n app", "docker compose up -d", "helm list -A"):
+            with self.subTest(c):
+                self.assertEqual(d(c), "allow")
+
+
 if __name__ == "__main__":
     unittest.main()

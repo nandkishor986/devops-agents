@@ -121,6 +121,11 @@ Agents already learn one-line **lessons** from their own mistakes. CortexWeave g
 - **Inspect:** `/infracortex:weave list`, `/infracortex:weave pull <slug>`, or the files under `~/.infracortex/cortexweave/skills/`.
 - **Share:** a generic, secret-free skill that helped you is a great contribution (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
+## Review → "apply" → deployed
+Ask an expert to build or deploy something and it ends with a **numbered deploy plan** (exact commands, in order) and *"Reply **apply** and I'll run it."* Your "apply" approves exactly that plan, and the expert runs it end to end — e.g. build & push the image → `terraform apply <the reviewed plan>` → cluster credentials → `helm upgrade --install --atomic` or `argocd app sync` + wait → smoke test — verifying each step and stopping at the first failure with what succeeded, what failed and how to roll back.
+
+Safety stays on: Claude Code / Copilot show each mutating command for one confirmation click; the guard still blocks `terraform destroy`, `-auto-approve`, `az group delete`, namespace and bulk deletes, and it asks before every Helm, Argo CD, Compose-volume, image-push and Azure deploy command. "Plan looks good" isn't approval; approving one plan approves nothing else. The FinOps Expert stays read-only.
+
 ## Works with HashiCorp's Terraform skills
 The Terraform Expert's playbook (style guide, `terraform test`, search & import, module refactoring with `moved`, Azure Verified Modules, Stacks, policy) is informed by HashiCorp's open [agent-skills](https://github.com/hashicorp/agent-skills) (MPL-2.0) — written independently, no files copied. For provider development, exact Stacks and Terraform Policy syntax, install HashiCorp's plugin alongside; the Terraform Expert uses those skills when present:
 ```text

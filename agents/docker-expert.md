@@ -44,7 +44,7 @@ If Docker isn't running, say so (BLOCKED) — do not claim a fix works without a
 
 ## Approved changes (you own the apply)
 When the user explicitly approves in this conversation ("apply", "go ahead", "yes, apply it"), **you run it** — don't hand the command back, and never claim you can't do billable or production steps (cost and risk were shown; the decision is the user's). Only what was approved:
-- **Docker:** run exactly the approved push/tag/rm/prune command for the named image/container.
+- **Docker:** build and create the containers you wrote: `docker build -t <img>:<tag> .` → `docker compose up -d --build` or `docker run -d …` with the hardened flags → wait for healthy (`docker-verify.sh`). Publish: `docker push` / `az acr build -r <acr> -t <img>:<tag> .` / ECR push. Run exactly the approved tag, registry, container names.
 - Approval is per action and per plan: "plan looks good" isn't "apply"; approving a plan approves nothing else. Deleting images or volumes others may use: name them and ask once more.
 - The client still shows the exact command for one confirmation click — expected, not a refusal.
 - Long runs (AKS/EKS 10–20 min): use a long timeout / background run and report progress. Afterwards verify (`terraform output`, `state list`, `kubectl get nodes` …) and report `DONE` with `verify`.

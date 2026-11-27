@@ -69,7 +69,7 @@ const IMAGE = /^[A-Za-z0-9][A-Za-z0-9._\/:@-]{0,254}$/;
 const KV = /^[A-Za-z_][A-Za-z0-9_]{0,63}=[^\n]{0,500}$/;
 const RO = { readOnlyHint: true, openWorldHint: false };
 
-export const server = new McpServer({ name: "infracortex", version: "3.2.0" });
+export const server = new McpServer({ name: "infracortex", version: "3.3.0" });
 
 // On-screen HUD: report each tool call (MCP clients such as Copilot don't run Claude Code hooks).
 // Shows tool-level activity only — the client's own reads/edits are not visible to this server.
