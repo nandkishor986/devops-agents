@@ -3,6 +3,8 @@
 All notable changes are listed here. Versions follow `.claude-plugin/plugin.json`.
 
 ## [Unreleased]
+### Security
+- MCP server: `zod` 3 → 4.6.7 (fixes GHSA high: memory exhaustion validating oversized collections). Tool schemas, input validation and injection rejection re-tested.
 
 ## [2.0.0] — renamed to InfraCortex
 ### Changed (breaking)
