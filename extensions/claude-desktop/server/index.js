@@ -223,27 +223,32 @@ server.registerTool("check_command", {
 
 // CortexWeave — the agents' shared skill memory (written by the overseer agent, read by any agent).
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// CortexWeave CLI exits non-zero on any failure (missing skill/version, unapproved skill): surface that as isError.
+const strict = (fn) => async (a) => {
+  try { const r = await fn(a); return { content: [{ type: "text", text: r.text }], isError: r.code !== 0 }; }
+  catch (e) { return { content: [{ type: "text", text: `ERR ${e.message}` }], isError: true }; }
+};
 const AGENT = z.enum(["terraform-engineer", "k8s-troubleshooter", "docker-engineer", "finops-analyst", "cortex"]);
 server.registerTool("search_skills", {
   title: "Search CortexWeave skills",
   description: "Search the skills InfraCortex agents learned from past runs. Returns short descriptions only (cheap). Call at the start of a task with task + tool keywords; pull_skill only if one clearly fits.",
   inputSchema: { query: z.string().min(2).max(200), agent: AGENT.optional(), limit: z.number().int().min(1).max(10).default(5) },
   annotations: RO,
-}, safe(async (a) => py("cortexweave.py", ["search", a.query, "--limit", String(a.limit), ...(a.agent ? ["--agent", a.agent] : [])])));
+}, strict(async (a) => py("cortexweave.py", ["search", a.query, "--limit", String(a.limit), ...(a.agent ? ["--agent", a.agent] : [])])));
 
 server.registerTool("pull_skill", {
   title: "Read a CortexWeave skill",
   description: "Return the full procedure of one skill (steps, heuristics, failure modes, how to check the result). Use after search_skills.",
   inputSchema: { slug: z.string().regex(SLUG).max(60), version: z.number().int().min(1).optional() },
   annotations: { readOnlyHint: true, openWorldHint: false },
-}, safe(async (a) => py("cortexweave.py", ["pull", a.slug, ...(a.version ? ["--version", String(a.version)] : [])])));
+}, strict(async (a) => py("cortexweave.py", ["pull", a.slug, ...(a.version ? ["--version", String(a.version)] : [])])));
 
 server.registerTool("agent_activity", {
   title: "Agent activity (monitor)",
   description: "What the InfraCortex agents did recently: runs, status mix, failed steps, contract rejections, avg tool calls per agent, plus queued runs and skill count.",
   inputSchema: { days: z.number().int().min(1).max(90).default(7) },
   annotations: RO,
-}, safe(async (a) => py("cortexweave.py", ["stats", "--days", String(a.days)])));
+}, strict(async (a) => py("cortexweave.py", ["stats", "--days", String(a.days)])));
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   await server.connect(new StdioServerTransport());

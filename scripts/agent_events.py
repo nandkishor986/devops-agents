@@ -338,8 +338,12 @@ def weave(d: dict, agent: str, aid: str, status: str, summary: str, contract_err
                                 "project": Path(str(d.get("cwd") or ".")).name, "task": task,
                                 "contract_errors": contract_errors, "findings_by_sev": sev},
                                transcript=d.get("agent_transcript_path"))
-    except Exception:  # noqa: BLE001 — memory must never break the agent
-        pass
+    except Exception as e:  # noqa: BLE001 — never break the agent, but never hide the failure either
+        try:
+            import cortexweave
+            cortexweave.log_error(f"could not record {agent} run {aid}: {type(e).__name__}: {str(e)[:200]}")
+        except Exception:  # noqa: BLE001
+            print(f"infracortex: could not record {agent} run: {e}", file=sys.stderr)
 
 
 def on_stop(d: dict, agent: str) -> None:

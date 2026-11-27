@@ -105,11 +105,14 @@ Agents already learn one-line **lessons** from their own mistakes. CortexWeave g
                     BLOCKED? very long run? ──► harvest queue      agent ──► pull_skill("fix-azurerm-missing-location")
  overseer ──► judges each queued run, skips one-offs,                      ◄── the full procedure, versioned
               weaves a capsule (procedure, heuristics, failure modes, check, stop condition)
-              ──► validated (rejects thin/secret-bearing skills) ──► skills/<slug>/vN.md + index
+              ──► validated (structure, secrets/IDs/IPs, dangerous steps) ──► saved for review
+ you ──► /infracortex:weave review ──► approve ──► active: now searchable by every agent
 ```
 
 - **Monitor:** every agent run is logged (agent, project, status, steps, failed calls, report severity mix). `/infracortex:weave stats` or Copilot's `agent_activity` shows it per agent.
 - **Harvest:** `/infracortex:weave` (or "overseer, harvest the queue") reviews the queue and weaves or improves skills. Run it after a batch of agent work, e.g. weekly.
+- **Review (required):** new skills are saved as *awaiting review* and no agent can find them until you approve them — `/infracortex:weave review` shows each one in full; `approve <slug>` / `reject <slug>`. This keeps text from a malicious repo or tool output from turning into instructions other agents follow.
+- **Safety built in:** run records are redacted before they're stored (secrets, tokens, cloud IDs, public IPs); capsules containing any of those, or dangerous steps (pipe-to-shell, auto-approve/destroy, disabling the guard, prompt-injection, exfiltration), are rejected; writes are locked and self-repairing; activity is kept 90 days.
 - **Use:** every agent's first step is a CortexWeave search; it pulls a skill only when one clearly fits. Nothing is injected.
 - **Inspect:** `/infracortex:weave list`, `/infracortex:weave pull <slug>`, or the files under `~/.infracortex/cortexweave/skills/`.
 - **Share:** a generic, secret-free skill that helped you is a great contribution (see [CONTRIBUTING.md](CONTRIBUTING.md)).
@@ -128,6 +131,8 @@ Agents already learn one-line **lessons** from their own mistakes. CortexWeave g
 | `DEVOPS_HUD=off` | on | disable the on-screen HUD |
 | `DEVOPS_LEARN=off` | on | disable mistake recording / lesson prompts |
 | `INFRACORTEX_WEAVE=off` | on | disable CortexWeave activity logging and harvesting |
+| `INFRACORTEX_WEAVE_RETENTION_DAYS` | 90 | how long the CortexWeave activity log is kept |
+| `INFRACORTEX_WEAVE_AUTO_APPROVE=1` | off | skip human review of new skills (not recommended on shared machines) |
 | `DEVOPS_GUARD=off` | on | disable the destructive-command guard (not recommended) |
 | currency (plugin option) | INR | FinOps currency — `/plugin configure infracortex@upinclouds` |
 | `TFE_TOKEN`, `TFE_ADDRESS` | — | HCP Terraform access for the Terraform MCP |
@@ -145,7 +150,9 @@ Everything runs locally with your own credentials. Stored on your machine only: 
 | No HUD popup | `DEVOPS_HUD` not `off`? Windows needs PowerShell 5.1+; macOS/Linux need Python with tkinter. It appears only while an InfraCortex agent runs. |
 | Copilot doesn't list the agents | Re-run `python scripts/make-copilot-agents.py`, then reload VS Code; use **Agent** mode in Copilot Chat. |
 | Copilot can't call `tf_scan` etc. | MCP view → start `infracortex`; check the `mcp.json` path points at `~/.infracortex/mcp-server/server/index.js`. |
-| `/infracortex:weave` says the queue is empty | Only runs worth learning from are queued (failed steps, rejected reports, blocked or very long runs); clean runs are logged but not queued. |
+| `/infracortex:weave` says the queue is empty | Only runs worth learning from are queued (failed steps, rejected reports, blocked or very long runs); clean runs and no-match searches are logged but not queued. |
+| A woven skill isn't found by agents | New skills need approval: `/infracortex:weave review`. |
+| `stats` shows `recording_errors` | CortexWeave couldn't write to `~/.infracortex/cortexweave` (disk full, permissions); see `errors.log` there. |
 
 ## Update and uninstall
 - **Update:** `claude plugin marketplace update upinclouds && claude plugin update infracortex@upinclouds`, then restart. For Copilot, rebuild/unzip the `.mcpb` and re-run `make-copilot-agents.py`.
