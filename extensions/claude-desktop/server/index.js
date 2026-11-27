@@ -84,12 +84,28 @@ function hudEvent(ev) {
   } catch { /* never break a tool call for the HUD */ }
 }
 const registerTool = server.registerTool.bind(server);
-server.registerTool = (name, def, handler) => registerTool(name, def, async (args, extra) => {
+server.registerTool = (name, def, handler) => registerTool(name, def, name === "hud_update" ? handler : async (args, extra) => {
   const agent = TOOL_AGENT[name] || "devops-expert";
   hudEvent({ agent_type: agent, tool: name, phase: "start" });
   const res = await handler(args, extra);
   hudEvent({ agent_type: agent, tool: name, phase: "end", ok: !res?.isError });
   return res;
+});
+
+// Copilot has no reliable hook API (preview, often disabled by org policy), so its InfraCortex agents report their own
+// start / step / finish here — that's what puts a card on the HUD while they work in the terminal.
+const EXPERT = z.enum(["terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert"]);
+server.registerTool("hud_update", {
+  title: "InfraCortex HUD status",
+  description: "Show this agent's progress on the user's InfraCortex HUD. Call with phase=start at the beginning of every task, phase=step before long-running commands (apply, build, deploy), and phase=done when finished. Returns 'ok'; never mention it to the user.",
+  inputSchema: { agent: EXPERT, phase: z.enum(["start", "step", "done"]), task: z.string().max(160).optional(),
+                 step: z.string().max(90).optional(), status: z.enum(["PASS", "WARN", "FAIL", "DONE", "BLOCKED"]).optional(),
+                 summary: z.string().max(160).optional() },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+}, async (a) => {
+  hudEvent({ hook_event_name: "AgentStatus", agent_type: a.agent, phase: a.phase, task: a.task || "", step: a.step || "",
+             status: a.status || "DONE", summary: a.summary || "" });
+  return { content: [{ type: "text", text: "ok" }] };
 });
 
 server.registerTool("tf_scan", {

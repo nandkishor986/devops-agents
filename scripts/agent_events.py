@@ -235,10 +235,63 @@ def on_start(d: dict, agent: str) -> dict | None:
     return None
 
 
+def on_status(d: dict, agent: str) -> None:
+    """A Copilot agent reporting its own progress via the hud_update MCP tool (Copilot has no usable hook API)."""
+    cid = f"copilot:{d.get('session', '')}:{agent}"
+    phase = d.get("phase")
+
+    def upd(a: dict) -> None:
+        e = a.get(cid)
+        if phase == "start" or e is None or e.get("ended"):
+            e = a[cid] = {"type": agent, "status": "running", "started": time.time(), "steps": 0, "errors": 0,
+                          "history": [], "source": str(d.get("source") or "Copilot"), "action": "starting",
+                          "project": Path(str(d.get("cwd") or ".")).name, "task": redact_short(d.get("task"))}
+        e["seen"] = time.time()
+        if phase == "step" and d.get("step"):
+            e["steps"] = e.get("steps", 0) + 1
+            _step(e, redact_short(d.get("step"), 90))
+        elif phase == "done":
+            e.update(status="done", result=str(d.get("status") or "DONE"), ended=time.time(), action="finished",
+                     summary=redact_short(d.get("summary")))
+    hud(upd)
+    if phase == "start":
+        ensure_hud()
+
+
+def redact_short(text, n: int = 140) -> str:
+    try:
+        sys.path.insert(0, str(HERE))
+        import cortexweave
+        return cortexweave.redact(" ".join(str(text or "").split()))[:n]
+    except Exception:  # noqa: BLE001
+        return " ".join(str(text or "").split())[:n]
+
+
 def on_mcp(d: dict, agent: str) -> None:
-    """A tool call on the infracortex MCP server. One card per (client process, domain); idle between calls."""
-    aid = f"mcp:{d.get('session', '')}:{agent}"
+    """A tool call on the infracortex MCP server. One card per (client process, domain); idle between calls.
+    While a Copilot agent card (hud_update) is open in the same window, the call becomes a step on that card."""
     tool, phase = str(d.get("tool", "")), d.get("phase")
+    try:
+        cards = json.loads((HUD_DIR / "state.json").read_text(encoding="utf-8")).get("agents", {})
+    except (OSError, ValueError):
+        cards = {}
+    open_card = next((k for k, v in cards.items() if k.startswith(f"copilot:{d.get('session', '')}:") and not v.get("ended")), None)
+    if open_card:
+        def step(a: dict) -> None:
+            e = a.get(open_card)
+            if not e:
+                return
+            e["seen"] = time.time()
+            if phase == "start":
+                e["steps"] = e.get("steps", 0) + 1
+                _step(e, f"mcp {tool}")
+            elif not d.get("ok", True):
+                e["errors"] = e.get("errors", 0) + 1
+                if e.get("history"):
+                    e["history"][-1]["ok"] = False
+        hud(step)
+        return
+    aid = f"mcp:{d.get('session', '')}:{agent}"
 
     def upd(a: dict) -> None:
         e = a.get(aid)
@@ -435,9 +488,9 @@ def main() -> int:
         return 0
     ev = d.get("hook_event_name")
     agent = agent_of(d)
-    if ev == "McpTool" and agent:  # from the infracortex MCP server (Copilot / Claude Desktop)
+    if ev in ("McpTool", "AgentStatus") and agent:  # from the infracortex MCP server (Copilot / Claude Desktop)
         try:
-            on_mcp(d, agent)
+            (on_status if ev == "AgentStatus" else on_mcp)(d, agent)
         except Exception:  # noqa: BLE001
             pass
         return 0
