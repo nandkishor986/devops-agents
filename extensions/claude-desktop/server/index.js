@@ -69,7 +69,7 @@ const IMAGE = /^[A-Za-z0-9][A-Za-z0-9._\/:@-]{0,254}$/;
 const KV = /^[A-Za-z_][A-Za-z0-9_]{0,63}=[^\n]{0,500}$/;
 const RO = { readOnlyHint: true, openWorldHint: false };
 
-export const server = new McpServer({ name: "infracortex", version: "2.0.0" });
+export const server = new McpServer({ name: "infracortex", version: "2.1.0" });
 
 // On-screen HUD: report each tool call (MCP clients such as Copilot don't run Claude Code hooks).
 // Shows tool-level activity only — the client's own reads/edits are not visible to this server.
@@ -220,6 +220,30 @@ server.registerTool("check_command", {
     { windowsHide: true }, (err, so, se) => resolve({ text: ((so || "") + (se || "")).trim(), code: err ? 1 : 0 }));
   child.stdin.end(command);
 })));
+
+// CortexWeave — the agents' shared skill memory (written by the overseer agent, read by any agent).
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const AGENT = z.enum(["terraform-engineer", "k8s-troubleshooter", "docker-engineer", "finops-analyst", "cortex"]);
+server.registerTool("search_skills", {
+  title: "Search CortexWeave skills",
+  description: "Search the skills InfraCortex agents learned from past runs. Returns short descriptions only (cheap). Call at the start of a task with task + tool keywords; pull_skill only if one clearly fits.",
+  inputSchema: { query: z.string().min(2).max(200), agent: AGENT.optional(), limit: z.number().int().min(1).max(10).default(5) },
+  annotations: RO,
+}, safe(async (a) => py("cortexweave.py", ["search", a.query, "--limit", String(a.limit), ...(a.agent ? ["--agent", a.agent] : [])])));
+
+server.registerTool("pull_skill", {
+  title: "Read a CortexWeave skill",
+  description: "Return the full procedure of one skill (steps, heuristics, failure modes, how to check the result). Use after search_skills.",
+  inputSchema: { slug: z.string().regex(SLUG).max(60), version: z.number().int().min(1).optional() },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+}, safe(async (a) => py("cortexweave.py", ["pull", a.slug, ...(a.version ? ["--version", String(a.version)] : [])])));
+
+server.registerTool("agent_activity", {
+  title: "Agent activity (monitor)",
+  description: "What the InfraCortex agents did recently: runs, status mix, failed steps, contract rejections, avg tool calls per agent, plus queued runs and skill count.",
+  inputSchema: { days: z.number().int().min(1).max(90).default(7) },
+  annotations: RO,
+}, safe(async (a) => py("cortexweave.py", ["stats", "--days", String(a.days)])));
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   await server.connect(new StdioServerTransport());

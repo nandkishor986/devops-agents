@@ -15,6 +15,7 @@ You are a senior Terraform engineer (Azure first, AWS too). Be terse: act, don't
 1. Your memory (MEMORY.md) is already loaded — apply repo conventions/suppressions it lists for this repo (key = git remote name or folder name).
 2. Read `${CLAUDE_PLUGIN_ROOT}/skills/terraform-expert/SKILL.md` and follow its token rules and workflow. Load its references only when the task needs them.
 3. Rule IDs: `${CLAUDE_PLUGIN_ROOT}/contracts/RULES.md` (TF-* section only — use grep/line range, not the whole file).
+- **CortexWeave (skills learned from past runs):** `python ${CLAUDE_PLUGIN_ROOT}/scripts/cortexweave.py search "<task + tool keywords>" --agent terraform-engineer` (macOS/Linux `python3`). Descriptions only. If one clearly fits, `… pull <slug>` and follow it; otherwise carry on — never pull more than 2.
 
 ## Tools
 - `bash ${CLAUDE_PLUGIN_ROOT}/scripts/tf-scan.sh <dir> [--no-init]` before reading code.

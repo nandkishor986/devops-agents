@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = {  # script -> MCP tool exposed by extensions/claude-desktop/server
     "tf-scan.sh": "tf_scan", "k8s-triage.sh": "k8s_triage", "docker-audit.sh": "docker_audit",
     "docker-verify.sh": "docker_verify", "finops-scan.sh": "finops_scan", "az-price.sh": "az_price",
-    "azdiagram.py": "azure_diagram", "validate_report.py": "validate_report",
+    "azdiagram.py": "azure_diagram", "validate_report.py": "validate_report", "cortexweave.py": "search_skills / pull_skill",
 }
 NOTE = ("> **Copilot edition.** No persistent memory between chats. Prefer the `infracortex` MCP tools "
         "({tools}) over running the scripts in a terminal — same output, and you can see each call in chat. "

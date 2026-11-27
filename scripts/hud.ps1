@@ -36,7 +36,8 @@ public class DevOpsHud : Form {
         { "k8s-troubleshooter", new[] { "Kubernetes Troubleshooter", "K8s", "#3B82F6" } },
         { "docker-engineer",    new[] { "Docker Engineer", "DK", "#06B6D4" } },
         { "finops-analyst",     new[] { "FinOps Analyst", "FO", "#22C55E" } },
-        { "cortex",             new[] { "Cortex", "CX", "#F97316" } } };
+        { "cortex",             new[] { "Cortex", "CX", "#F97316" } },
+        { "overseer",           new[] { "Overseer", "OV", "#14B8A6" } } };
 
     readonly string stateDir;
     List<HudAgent> agents = new List<HudAgent>();

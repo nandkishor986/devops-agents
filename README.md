@@ -1,164 +1,193 @@
-# infracortex — plug-and-play DevOps agents for Claude Code
+# InfraCortex — self-learning DevOps agents for Claude Code and GitHub Copilot
 
 [![ci](https://github.com/nandkishor986/infracortex/actions/workflows/ci.yml/badge.svg)](https://github.com/nandkishor986/infracortex/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Token-lean **Terraform (Azure-first)**, **Kubernetes/AKS**, **Docker** and **FinOps** subagents, plus **Azure architecture diagrams with official icons**. Each agent has persistent memory, uses official MCP servers, returns a **typed report contract**, and ships with a guard hook that blocks or asks before destructive infra commands.
+Token-lean AI agents for **Terraform (Azure-first, AWS)**, **Kubernetes/AKS**, **Docker** and **FinOps** that review, fix and build infrastructure code, return **typed reports**, refuse destructive commands without your approval, **learn from their own mistakes**, and keep a shared skill memory (**CortexWeave**) curated by a monitor agent (**overseer**). A live on-screen HUD shows which agent is working and what it's doing.
 
-**Five agents:** `terraform-engineer` · `k8s-troubleshooter` · `docker-engineer` · `finops-analyst` · `cortex` (all four in one) — usable alone, as a parallel team (`/infracortex:team`), in **Claude Code** (CLI, VS Code, Desktop) and in **GitHub Copilot**. They **learn from their own mistakes**, and an **on-screen HUD** shows which agent is working and what it's doing.
+Built by Nandu · upinclouds · MIT licensed · contributions welcome.
 
-Built by Nandu · upinclouds. Open source (MIT) — improvements welcome.
+**Contents:** [Agents](#the-agents) · [Prerequisites](#prerequisites) · [Quick start](#quick-start) · [Use in Claude Code](#use-in-claude-code) · [Use in GitHub Copilot](#use-in-github-copilot-vs-code) · [CortexWeave + overseer](#cortexweave-and-the-overseer-shared-skill-memory) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting) · [Update / uninstall](#update-and-uninstall) · [Reference](#reference)
 
 ---
 
-## Install (2 commands)
+## The agents
 
-In **Claude Code** (CLI, VS Code extension, or the Code tab in Claude Desktop):
+| Agent | Does | Ask it / command |
+|---|---|---|
+| `terraform-engineer` | Review, write, refactor, debug Terraform (azurerm/azapi, aws 6.x), state, IaC pipelines with OIDC | `/infracortex:tf-review ./infra` · "create a private AKS module with workload identity" |
+| `k8s-troubleshooter` | Root-cause failing pods (CrashLoop, Pending, OOMKilled, ImagePull), networking, RBAC; write manifest fixes | `/infracortex:k8s-debug payments api crashloop` |
+| `docker-engineer` | Dockerfile/Compose review, hardening, image size, CVEs; diagnose → fix → verify loop | `/infracortex:docker-audit ./Dockerfile` · "my container goes unhealthy, fix it" |
+| `finops-analyst` | Waste, rightsizing, Infracost diffs, price lookups (Azure/AWS) — read-only | `/infracortex:finops-scan --tf ./infra` · "what does a D4s_v5 cost in eastus2?" |
+| `cortex` | All four skill sets in one context, for small/medium cross-domain tasks | `/infracortex:cortex containerise the app, write the AKS manifest and ACR Terraform` |
+| `overseer` | Monitors every agent's runs and weaves the worth-learning ones into CortexWeave skills | `/infracortex:weave` · "what have my agents been doing?" |
+
+More: `/infracortex:team [dir] [goal]` runs the specialists **in parallel** and routes their hand-offs · `/infracortex:provision <what>` creates infra end to end (code + verify + price) · `/infracortex:learn` reviews lessons · diagrams: "draw our network from ./infra" (official Azure icons, `.drawio`/PNG).
+
+## Prerequisites
+
+| Need | Windows | macOS / Linux |
+|---|---|---|
+| Claude Code (CLI, VS Code extension, or Desktop Code tab) **and/or** VS Code with GitHub Copilot | | |
+| Git (+ Git Bash on Windows — the scripts are bash) | `winget install Git.Git` | built-in |
+| Python 3.10+ (hooks, validator, CortexWeave, diagrams) | `winget install Python.Python.3.12` | built-in / package manager |
+| Node 18+ (Azure/Kubernetes MCP via npx, Copilot MCP server) | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
+| jq | `winget install jqlang.jq` | `brew/apt install jq` |
+| Docker (Terraform MCP, Docker agent's verify loop) | Docker Desktop | Docker Engine |
+| Cloud access as needed: `az login` (Reader + Cost Management Reader), `aws sso login`, a kubeconfig | | |
+
+Optional scanners (skipped if missing): `terraform tflint trivy checkov infracost kubectl kubeconform hadolint` · `pip install python-hcl2` (recommended: AST-level Terraform checks) · `pip install diagrams` + Graphviz (PNG diagrams).
+
+## Quick start
 
 ```text
 /plugin marketplace add nandkishor986/infracortex
 /plugin install infracortex@upinclouds
 ```
-Restart Claude Code. Run `/mcp` to confirm `terraform`, `azure`, `kubernetes` are connected.
+Restart Claude Code, open a project, then try: `/infracortex:team . review`. A HUD card pops up bottom-right for each agent while it works.
 
-**Install scope** (pick one per machine or repo):
+---
+
+## Use in Claude Code
+
+Works the same in the **terminal (`claude`)**, the **VS Code Claude Code panel** and the **Code tab of Claude Desktop** — they share `~/.claude` settings, so install once.
+
+**Install scope**
 
 | Goal | Command |
 |---|---|
 | Every repo on this machine | `claude plugin install infracortex@upinclouds` (user scope) |
 | One repo, only you | `claude plugin install infracortex@upinclouds --scope local` |
-| One repo, whole team | `--scope project`, then commit `.claude/settings.json`; each teammate runs the install once |
-| Installed globally, off in one repo | `claude plugin disable infracortex@upinclouds --scope local` |
+| One repo, whole team | `--scope project`, commit `.claude/settings.json`; each teammate installs once |
+| Off in one repo | `claude plugin disable infracortex@upinclouds --scope local` |
 
-Local overrides project, and project overrides user. The terminal, VS Code and the Desktop Code tab share these settings.
+Try without installing: `claude --plugin-dir ./infracortex`. No marketplace: `./install.sh` (copies into `~/.claude`; `--no-mcp`, `--no-hook`, `--uninstall`).
 
-**Local / no marketplace:** `claude --plugin-dir ./infracortex` (try without installing) or `./install.sh` (copies into `~/.claude`; `--no-mcp`, `--no-hook`, `--uninstall`).
+**Three ways to use an agent**
+1. **Slash commands** (cheapest, predictable): `/infracortex:tf-review ./infra`, `/infracortex:team . security`, `/infracortex:cortex <task>`, `/infracortex:weave`.
+2. **Plain language** — Claude delegates automatically: "review the Terraform in infra/ for security", "why is the payments pod crashlooping?".
+3. **By name**: `@agent-infracortex:terraform-engineer review modules/aks` or "use cortex to …".
 
-**Claude Desktop chat / claude.ai (skills only, no agents/hooks):** `bash scripts/build-desktop.sh` → upload `dist/*.zip` under Settings → Capabilities → Skills; merge `dist/claude_desktop_config.snippet.json` into `claude_desktop_config.json`; add `https://mcp.draw.io/mcp` as a custom connector.
+**What you get in Claude Code (and not elsewhere):** subagents with their own context, persistent memory per agent, the **guard hook** (denies `terraform destroy`, `apply -auto-approve`, `az group delete`, namespace deletes…; asks before any apply), the **contract gate** (typed AgentReport), **self-learning**, **CortexWeave** harvesting, and the full-detail HUD. Check MCP servers with `/mcp` (`terraform`, `azure`, `kubernetes`).
 
-> **Which surface?** Claude Code (CLI or VS Code extension) is the lightest *and* the only one with subagents, memory and hooks. Use Desktop chat only for quick questions.
+**Tip:** for a one-line fix say "do it here, don't delegate" — an agent re-reads context from scratch, which costs more for tiny tasks.
 
-### Prerequisites
-| Need | Windows | macOS / Linux |
-|---|---|---|
-| Git Bash (Claude Code on Windows uses it) | `winget install Git.Git` | built-in |
-| Python 3 (guard hook, validator, diagrams) | `winget install Python.Python.3.12` | built-in / pkg manager |
-| jq | `winget install jqlang.jq` | `brew/apt install jq` |
-| Node (Azure + K8s MCP via npx) | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
-| Docker (Terraform MCP) | Docker Desktop | Docker |
-| `az login` + `az account set -s <sub>` (Azure MCP, FinOps; needs Reader + Cost Management Reader) · kubeconfig (K8s) | | |
+## Use in GitHub Copilot (VS Code)
 
-**Optional scanners** (scripts skip any that are missing): `terraform tflint trivy checkov infracost kubectl kubeconform kube-linter hadolint`.
-**From PyPI:** `pip install python-hcl2` (AST-level Terraform checks instead of grep; recommended), `pip install checkov` (extra IaC policies), `pip install diagrams` + Graphviz for PNG/SVG diagrams.
+Copilot gets the same agents as **custom agents** plus the scanners and CortexWeave as **MCP tools**.
+
+1. **Build the MCP server** (needs Node 18+): `bash extensions/build.sh` → `dist/infracortex-<ver>.mcpb`, then unzip it to `~/.infracortex/mcp-server`.
+2. **Register it** — Command Palette → *MCP: Open User Configuration* and add:
+   ```json
+   { "servers": { "infracortex": { "type": "stdio", "command": "node",
+       "args": ["${userHome}/.infracortex/mcp-server/server/index.js"],
+       "env": { "DEVOPS_WORKSPACE": "${workspaceFolder}", "DEVOPS_CURRENCY": "INR", "DEVOPS_CLIENT": "Copilot (VS Code)" } } } }
+   ```
+   (Windows: also add `"DEVOPS_BASH": "C:\\Program Files\\Git\\bin\\bash.exe"` and `"DEVOPS_PYTHON": "python"`.) Start it from the MCP view or let Copilot start it on first use.
+3. **Add the agents**: `python scripts/make-copilot-agents.py` writes `terraform-engineer`, `k8s-troubleshooter`, `docker-engineer`, `finops-analyst` and `cortex` as `.agent.md` files into your VS Code user prompts folder (all workspaces) — or `--out .github/agents` to commit them into one repo for your team.
+4. **Use them**: open Copilot Chat → switch to **Agent** mode → pick e.g. **terraform-engineer** in the agent dropdown → "review infra/ for security". Copilot calls `tf_scan`, `search_skills`, … and shows each tool call with its input and output.
+
+MCP tools available to Copilot: `tf_scan` · `k8s_triage` · `docker_audit` · `docker_verify` · `finops_scan` · `az_price` · `azure_diagram` · `validate_report` · `check_command` · `search_skills` · `pull_skill` · `agent_activity`.
+
+**Differences from Claude Code:** no persistent agent memory, no guard hook (Copilot asks before running terminal commands — read each one), no contract gate, and the HUD shows only the MCP tool calls (Copilot has no hook API). Copilot agents *read* CortexWeave skills; weaving new ones happens in Claude Code via the `overseer`.
+
+**Optional:** the VS Code extension (`code --install-extension dist/infracortex-<ver>.vsix`) adds one-click scans (sidebar, right-click, Problems panel) with no AI and no tokens. The same `.mcpb` installs in **Claude Desktop** (double-click) to use the tools in Desktop chat.
 
 ---
 
+## CortexWeave and the overseer (shared skill memory)
+
+Agents already learn one-line **lessons** from their own mistakes. CortexWeave goes further: it turns real runs into **reusable procedures** that every agent — in Claude Code or Copilot — can look up.
+
+```
+ WRITE (after a run, in the background)                           READ (at the start of a task, the agent chooses)
+ agent finishes ──► hooks record the run in the activity log      agent ──► search_skills("terraform validate location")
+               └──► selector: failed steps? rejected report?               ◄── descriptions only (cheap)
+                    BLOCKED? very long run? ──► harvest queue      agent ──► pull_skill("fix-azurerm-missing-location")
+ overseer ──► judges each queued run, skips one-offs,                      ◄── the full procedure, versioned
+              weaves a capsule (procedure, heuristics, failure modes, check, stop condition)
+              ──► validated (rejects thin/secret-bearing skills) ──► skills/<slug>/vN.md + index
+```
+
+- **Monitor:** every agent run is logged (agent, project, status, steps, failed calls, report severity mix). `/infracortex:weave stats` or Copilot's `agent_activity` shows it per agent.
+- **Harvest:** `/infracortex:weave` (or "overseer, harvest the queue") reviews the queue and weaves or improves skills. Run it after a batch of agent work, e.g. weekly.
+- **Use:** every agent's first step is a CortexWeave search; it pulls a skill only when one clearly fits. Nothing is injected.
+- **Inspect:** `/infracortex:weave list`, `/infracortex:weave pull <slug>`, or the files under `~/.infracortex/cortexweave/skills/`.
+- **Share:** a generic, secret-free skill that helped you is a great contribution (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+## More features
+- **Self-learning:** failed commands, guard blocks and rejected reports are recorded per agent; the next run is told about new or REPEATED mistakes and writes a LESSON to its memory; `/infracortex:learn all --promote` moves proven lessons into `skills/*/references/learned.md`.
+- **Team mode:** `/infracortex:team` picks agents by what the folder contains, runs them in parallel, routes `handoff:` items, and merges one deduped findings table.
+- **HUD:** always-on-top panel (never steals focus): agent, status pill (Running / Stalled / Passed / Warning / Failed / Blocked / Idle), source (`VS Code · project · 1m 12s`), task, last steps, errors recorded for learning. Windows WinForms (`scripts/hud.ps1`), macOS/Linux tkinter (`scripts/hud.py`).
+- **Typed reports + guard + diagrams + Docker self-healing loop** — see [Reference](#reference).
+
+## Configuration
+
+| Setting | Default | What it does |
+|---|---|---|
+| `INFRACORTEX_HOME` | `~/.infracortex` | where HUD state, the learning journal and CortexWeave live |
+| `DEVOPS_HUD=off` | on | disable the on-screen HUD |
+| `DEVOPS_LEARN=off` | on | disable mistake recording / lesson prompts |
+| `INFRACORTEX_WEAVE=off` | on | disable CortexWeave activity logging and harvesting |
+| `DEVOPS_GUARD=off` | on | disable the destructive-command guard (not recommended) |
+| currency (plugin option) | INR | FinOps currency — `/plugin configure infracortex@upinclouds` |
+| `TFE_TOKEN`, `TFE_ADDRESS` | — | HCP Terraform access for the Terraform MCP |
+
+## Data and privacy
+Everything runs locally with your own credentials. Stored on your machine only: `~/.infracortex/` (HUD state, normalised mistake journal, CortexWeave activity log, queue and skills) and `~/.claude/agent-memory/infracortex-*/` (agent memories). Capsules and lessons are rejected if they contain secret-, ID- or public-IP-like strings. Optional exceptions: the hosted draw.io MCP (off by default) and TypeSafe Jev (off unless you set a key). See [SECURITY.md](SECURITY.md).
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `/infracortex:…` commands missing | `claude plugin list` → enabled? Restart Claude Code after installing or updating. |
+| An MCP server shows "failed" in `/mcp` | `terraform` needs Docker running; `azure` needs `az login`; `kubernetes` needs a reachable cluster (check your IP is in the API server allow-list). |
+| Scripts fail on Windows / "python3 not found" | Install Git for Windows and Python from python.org; the toolkit falls back from the Store `python3` stub to `python` automatically. |
+| No HUD popup | `DEVOPS_HUD` not `off`? Windows needs PowerShell 5.1+; macOS/Linux need Python with tkinter. It appears only while an InfraCortex agent runs. |
+| Copilot doesn't list the agents | Re-run `python scripts/make-copilot-agents.py`, then reload VS Code; use **Agent** mode in Copilot Chat. |
+| Copilot can't call `tf_scan` etc. | MCP view → start `infracortex`; check the `mcp.json` path points at `~/.infracortex/mcp-server/server/index.js`. |
+| `/infracortex:weave` says the queue is empty | Only runs worth learning from are queued (failed steps, rejected reports, blocked or very long runs); clean runs are logged but not queued. |
+
+## Update and uninstall
+- **Update:** `claude plugin marketplace update upinclouds && claude plugin update infracortex@upinclouds`, then restart. For Copilot, rebuild/unzip the `.mcpb` and re-run `make-copilot-agents.py`.
+- **Uninstall:** `claude plugin uninstall infracortex@upinclouds`; remove the `infracortex` entry from VS Code's `mcp.json`, the `.agent.md` files from your prompts folder, and optionally `~/.infracortex` and `~/.claude/agent-memory/infracortex-*`.
+
+---
+
+# Reference
 
 ## AWS: "create a secure EC2" end to end
 
 ```
 You: create a t3.micro EC2 in ap-south-1 for dev, private subnet subnet-0abc in vpc-0def, considering security
 ```
-1. **provision** skill confirms the account (`aws sts get-caller-identity`) and fills gaps (region, env, subnet).
+1. **provision** confirms the account (`aws sts get-caller-identity`) and fills gaps (region, env, subnet).
 2. **terraform-engineer** writes `infra/<name>/` from the secure baseline in `skills/terraform-expert/references/aws-patterns.md`: aws provider `~> 6.0`, private subnet, no public IP, no SSH (SSM Session Manager), IMDSv2 required, encrypted gp3 root, scoped instance profile, AMI from the SSM parameter, monitoring.
-3. Verify gate: `terraform fmt/validate` + `tf-scan.sh` (AST checks TF-SEC-004/005/009/010/011, TF-MNT-006, TF-OPS-003) must be clean, then `terraform plan`.
-4. **finops-analyst** prices it: `aws-price.sh ec2 t3.micro --region ap-south-1 --currency INR` + `aws-price.sh ebs gp3 --gb 30` (AWS lists USD; converted and labelled).
-5. You get one summary (plan + monthly INR). **Nothing is created until you approve**: the guard hook asks before `terraform apply` and every mutating `aws` command, and denies destructive ones (`terminate-instances`, `s3 rm --recursive`, `iam create-access-key`, …). `--dry-run` passes.
+3. Verify gate: `terraform fmt/validate` + `tf-scan.sh` must be clean, then `terraform plan`.
+4. **finops-analyst** prices it (`aws-price.sh`, converted to your currency).
+5. One summary (plan + monthly cost). **Nothing is created until you approve.**
 
-Setup:
-```bash
-aws configure sso && aws sso login --profile dev && export AWS_PROFILE=dev   # no static keys
-/plugin install aws-core@claude-plugins-official                             # optional: official AWS MCP Server (docs + live API)
-```
-IAM needed: read-only + `pricing:GetProducts` for review/costing; the deploy role (yours, or OIDC in CI) for apply.
-
-## Use
-
-| You type | What happens |
-|---|---|
-| `/infracortex:tf-review ./infra` | terraform-engineer scans, then reviews and returns a findings table |
-| `/infracortex:k8s-debug payments api crashloop` | k8s-troubleshooter triages, finds the root cause, and writes a manifest fix |
-| `/infracortex:docker-audit ./Dockerfile myacr.azurecr.io/api:1.2 fix` | docker-engineer audits the file and hardens it |
-| "my container goes unhealthy, fix it" | docker-engineer runs the **diagnose → fix → re-verify loop** (below) until the container is healthy under hardened flags |
-| `/infracortex:finops-scan --tf ./infra` | finops-analyst runs an Infracost diff vs main |
-| "Create a storage account in eastus2 with private endpoints" (or `/infracortex:provision …`) | **provision** workflow: terraform-engineer writes and verifies the code, finops-analyst prices it (Infracost, or Azure Retail Prices with no key), then one summary with the monthly estimate and the approvals needed |
-| "What does a D4s_v5 cost in eastus2?" | finops-analyst → `az-price.sh preset vm D4s_v5 --region eastus2` (no login) |
-| "Create a private AKS module with workload identity and a KV private endpoint" | terraform-engineer is auto-delegated and verifies attributes through the Terraform MCP |
-| "Draw our hub-spoke network from ./infra" | azure-diagrams: `from-tf` → typed spec → editable `.drawio` + PNG, official Azure icons |
-| "Add Redis to that diagram and export it to Visio" | azure-diagrams edits the `.drawio` with CLI-Anything's draw.io CLI (`--json`), then exports to `.vsdx` |
-
-You can also call an agent explicitly: `@agent-infracortex:terraform-engineer review modules/aks`.
-
----
+Setup: `aws configure sso && aws sso login --profile dev` (no static keys); optional official AWS MCP: `/plugin install aws-core@claude-plugins-official`.
 
 ## Why it's light on tokens
 
-1. **Scripts digest, the model reasons.** `scripts/*-scan.sh` run fmt/validate/tflint/trivy/kubectl/hadolint/az graph and print **one line per issue, already tagged with a rule ID**. No raw YAML/JSON enters context.
-2. **Progressive disclosure.** Each `SKILL.md` is under 60 lines. Checklists, playbooks and patterns live in `references/` and load only for the task that needs them.
-3. **Subagents isolate context.** Scans and file reads stay in the subagent; your main chat gets back a compact JSON report. `omitClaudeMd: true` skips re-loading project CLAUDE.md files.
-4. **Slash skills are invisible until used** (`disable-model-invocation: true`), so they cost nothing per turn.
-5. **Docs on demand.** The Terraform MCP fetches provider docs for exactly the resource in hand, instead of the model guessing (and then fixing) attributes.
-6. **Diagrams as a 30-line JSON spec.** The script owns layout and icon mapping and writes `.drawio`/PNG locally, with no MCP and no tool schemas.
+1. **Scripts digest, the model reasons.** `scripts/*-scan.sh` print **one line per issue, already tagged with a rule ID**. No raw YAML/JSON enters context.
+2. **Progressive disclosure.** Each `SKILL.md` is short; checklists and patterns live in `references/` and load only when needed.
+3. **Subagents isolate context.** Your main chat gets back a compact JSON report.
+4. **Slash skills are invisible until used**, so they cost nothing per turn.
+5. **Docs on demand** via the Terraform MCP instead of guessing attributes.
+6. **CortexWeave search returns descriptions only**; the full procedure is pulled only when it fits.
 
 ## Extensions: Claude Desktop and VS Code
 
-`bash extensions/build.sh` builds both into `dist/` (needs Node ≥ 18). Each bundles the same scripts and rule registry as the plugin.
+`bash extensions/build.sh` builds both into `dist/` (needs Node ≥ 18).
 
-| | Claude Desktop extension (`.mcpb`) | VS Code extension (`.vsix`) |
+| | Claude Desktop / Copilot MCP server (`.mcpb`) | VS Code extension (`.vsix`) |
 |---|---|---|
-| Install | Double-click the `.mcpb`, or Desktop → Settings → Extensions → Install | `code --install-extension dist/infracortex-<ver>.vsix` or Extensions → … → Install from VSIX |
-| What you get | 9 MCP tools in Desktop **chat**, running on your machine: `tf_scan`, `k8s_triage`, `docker_audit`, `docker_verify`, `finops_scan`, `az_price`, `azure_diagram`, `validate_report`, `check_command` | Sidebar + right-click + command palette; findings land in the **Problems** panel with rule IDs and severities |
-| Settings | workspace folder (tools are locked inside it), currency (INR), bash path, python command | `devopsAgents.currency` (INR), `defaultRegion`, `bashPath`, `pythonPath`, `terraformInit` |
+| Install | Double-click (Desktop) or unzip + `mcp.json` (Copilot) | `code --install-extension dist/infracortex-<ver>.vsix` |
+| What you get | 12 MCP tools (scanners, diagrams, guard check, CortexWeave) | Sidebar, right-click, command palette; findings in **Problems** |
 | Uses tokens | yes (it's chat) | no (scripts only) |
-| Agents / hooks / memory | no (Claude Code plugin only) | no (use the plugin in the Claude Code panel for those) |
 
-Security in the Desktop extension:
-- Every path is resolved inside the chosen workspace; `../` escapes are refused.
-- Scripts run with argument arrays, never a shell string.
-- Inputs are schema-validated (namespaces, image names, ports, `KEY=VAL`), and an injection such as `ns; rm -rf /` is rejected before anything runs.
-- Scans are marked read-only. `docker_verify` builds and runs a temporary container, then removes it.
-
-**Best combo:** the plugin in the Claude Code panel (agents, memory, guard), plus the `.vsix` for one-click scans with Problems-panel results.
-
-### GitHub Copilot (VS Code agent mode)
-
-1. MCP tools: unzip `dist/infracortex-<ver>.mcpb` to `~/.infracortex/mcp-server`, then add to VS Code's user `mcp.json` (Command Palette → *MCP: Open User Configuration*):
-   ```json
-   { "servers": { "infracortex": { "type": "stdio", "command": "node",
-       "args": ["${userHome}/.infracortex/mcp-server/server/index.js"],
-       "env": { "DEVOPS_WORKSPACE": "${workspaceFolder}", "DEVOPS_CURRENCY": "INR" } } } }
-   ```
-2. Agents: `python scripts/make-copilot-agents.py` writes `terraform-engineer`, `k8s-troubleshooter`, `docker-engineer`, `finops-analyst` as `.agent.md` into your VS Code user prompts folder (or `--out .github/agents` for one repo). Pick them from the agent dropdown in Copilot Chat.
-3. Limits vs Claude Code: no persistent memory, no SubagentStop contract gate, and **no guard hook** — Copilot asks before running terminal commands, so read each one before approving.
-
-### On-screen agent HUD (see the agents work)
-A small always-on-top panel (bottom-right, never steals focus) shows every devops agent that is working **right now**, one card each:
-avatar with a spinning progress ring in the agent's colour · name · status pill (**Running / Stalled / Passed / Warning / Failed / Blocked / Idle**) · *where* it runs (`VS Code · <project> · 1m 12s`) · the task it was given (or its final summary) · its last two steps with a live marker (red = that step failed) · steps and errors recorded for learning · an activity bar. Collapse ⌄ or close × in the header; drag to move.
-
-What feeds it — and what it can't see:
-| Client | Shown | How |
-|---|---|---|
-| Claude Code (VS Code panel, CLI, Desktop Code tab) | every step of every devops agent | plugin hooks (SubagentStart, PreToolUse, PostToolUseFailure, SubagentStop) |
-| GitHub Copilot / Claude Desktop chat | each `infracortex` MCP tool call (`tf_scan`, `docker_audit`, …) as an "Idle/Running" card labelled with the client | the MCP server reports its own tool calls |
-| Copilot's own file reads/edits | not shown | Copilot has no hook API |
-
-A card with no activity for 5 min shows **Stalled**; it disappears after 30 min (dead session). Windows: custom-drawn WinForms (`scripts/hud.ps1`, no install); macOS/Linux: tkinter (`scripts/hud.py`). Off: `DEVOPS_HUD=off`.
-
-### The combined `cortex`
-One agent with all four skill sets (Terraform, Kubernetes, Docker, FinOps) in a single context — loads only the skills a task touches, checks the seams between them (image tag ↔ manifest, ACR ↔ AKS identity, HEALTHCHECK ↔ probes, SKU ↔ cost), and reports findings from any domain (`"agent":"devops"`). Use it for small/medium cross-domain work: `/infracortex:cortex <task>` or "use the devops agent to …". For big reviews use `/infracortex:team` (parallel specialists). In Copilot it appears as **cortex** in the agent picker.
-
-### Self-learning (agents don't repeat mistakes)
-1. **Capture (automatic, no tokens):** hooks record every failed command, guard block and contract-rejected report of a devops agent in `~/.infracortex/learning/<agent>.json`, normalised so "same error, different line/path" counts as the same mistake.
-2. **Teach (next run):** on the agent's next start, only *new* or *repeated* mistakes are injected (≤ 6 lines; nothing when there's nothing new). The agent writes a `- LESSON: <situation> → <do instead>` line into its persistent memory (`~/.claude/agent-memory/infracortex-<agent>/MEMORY.md`, `## Lessons`). A mistake that comes back after a lesson is flagged **REPEATED ×N** and the agent must make the lesson more specific.
-3. **Promote to skills:** `/infracortex:learn` shows mistakes vs lessons per agent; `/infracortex:learn all --promote` moves proven lessons into `skills/<domain>-expert/references/learned.md`, which every run reads first — commit it and every machine gets them.
-Off: `DEVOPS_LEARN=off`. Nothing secret is stored (errors are normalised; lessons must be generic).
-
-### Team mode (agents together or alone)
-Each agent works alone (`/infracortex:tf-review`, or "use docker-engineer to …"). Together: `/infracortex:team [dir] [goal]` detects Terraform / Kubernetes / Docker in the folder, runs the matching agents **in parallel**, routes each agent's `handoff:<agent>: …` items to the right agent in a second wave, and returns one merged, deduped findings table with cross-cutting issues.
-
-### Watching an agent work
-- **Claude Code panel (VS Code) or Claude Desktop Code tab:** every file read, command and edit appears live; expand a subagent's row to see its steps.
-- **Copilot agent mode:** each MCP tool call (`tf_scan`, …) shows its input and output in chat.
-- **VS Code extension:** *Output → InfraCortex* streams the script output; results land in *Problems*.
+MCP server security: paths are locked inside the workspace, scripts run with argument arrays (never a shell string), inputs are schema-validated (an injection such as `ns; rm -rf /` is rejected), scans are read-only.
 
 ## Self-healing Docker loop
 
@@ -272,11 +301,12 @@ Before installing third-party code, read it. The draw.io harness is about 4k lin
 ## Layout
 ```
 .claude-plugin/{plugin,marketplace}.json   .mcp.json   hooks/hooks.json
-agents/      terraform-engineer · k8s-troubleshooter · docker-engineer · finops-analyst
+agents/      terraform-engineer · k8s-troubleshooter · docker-engineer · finops-analyst · cortex (all-in-one) · overseer (monitor)
 skills/      terraform-expert · k8s-expert · docker-expert · finops-expert · azure-diagrams   (knowledge + references/)
-             provision (multi-agent workflow) · tf-review · k8s-debug · docker-audit · finops-scan (entry points)
+             provision · team · cortex · weave · learn · tf-review · k8s-debug · docker-audit · finops-scan (entry points)
 scripts/     tf-scan · tf_inspect.py · k8s-triage · docker-audit · docker-verify · finops-scan · az-price · azdiagram.py
              guard.py · jev_judge.py · contract_gate.py · validate_report.py · build-desktop
+             agent_events.py (HUD + learning hooks) · cortexweave.py (skill memory) · hud.ps1/hud.py · make-copilot-agents.py
 contracts/   report.schema.json · RULES.md          examples/  hub-spoke-aks.{json,png,drawio}
 tests/       test_contracts.py (unit) · docker_fix_loop.sh + fixtures/ (real containers) · az_price_test.sh     evals/  plugin eval suite
 extensions/  claude-desktop/ (.mcpb MCP server) · vscode/ (.vsix) · build.sh → dist/
@@ -292,7 +322,7 @@ extensions/  claude-desktop/ (.mcpb MCP server) · vscode/ (.vsix) · build.sh �
 Scripts and agents run locally against your credentials. If you enable Jev, redacted gray-zone shell commands are sent to TypeSafe's API. Diagrams are generated locally by default. Only the opt-in hosted draw.io MCP sends diagram XML to draw.io ([privacy policy](https://www.drawio.com/privacy)). MCP servers run with your identity, so scope your `az`/kube contexts accordingly.
 
 ## Contributing
-Issues and pull requests are welcome — new rules, better fixes, more clouds/tools, and especially **lessons your agents learned** (`/infracortex:learn all --promote` → PR with `skills/*/references/learned.md`). Read [CONTRIBUTING.md](CONTRIBUTING.md) first; report security problems privately ([SECURITY.md](SECURITY.md)). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Contributions follow one standard path — **issue → fork → branch → signed-off Conventional Commits → pull request → CI → code-owner review → squash/rebase merge**. Nobody pushes to `main` directly (maintainers included); GitHub rulesets enforce it, release tags are maintainer-only, and workflows from first-time contributors need approval. Most valuable: new rules, better fixes, more clouds/tools, and **lessons or CortexWeave skills your agents learned** (generic and secret-free). Read [CONTRIBUTING.md](CONTRIBUTING.md) first; report security problems privately ([SECURITY.md](SECURITY.md)); changes are in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 [MIT](LICENSE)

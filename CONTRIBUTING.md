@@ -36,7 +36,24 @@ After changing plugin files, bump `version` in `.claude-plugin/plugin.json` (and
 ## Improving the agents with real lessons
 Agents record their own mistakes and write lessons to local memory. When a lesson proves itself, run `/infracortex:learn all --promote` — it moves generic, secret-free lessons into `skills/<domain>-expert/references/learned.md`. Open a PR with that diff: it's the most valuable kind of contribution, because every user's agents then skip that mistake.
 
-## Pull requests
+CortexWeave skills work the same way: skills the `overseer` wove on your machine live in `~/.infracortex/cortexweave/skills/`. A generic, secret-free skill that helped you is welcome as a PR (copy its `vN.md` into `docs/skills/` and explain the runs it came from).
+
+## The standard procedure (the only way in)
+Nobody — maintainers included — pushes to `main`. GitHub enforces this with rulesets; every change follows the same path:
+
+1. **Open or pick an issue** first for anything bigger than a typo, so the approach is agreed before you write code.
+2. **Fork** the repo (you can't push branches to it unless you're a collaborator).
+3. **Branch** from the latest `main`: `feat/<short-name>`, `fix/<short-name>`, `docs/…`, `security/…`, `rule/<RULE-ID>`.
+4. **Commit** with [Conventional Commits](https://www.conventionalcommits.org) (`feat: …`, `fix: …`, `docs: …`) and sign off every commit (`git commit -s`, the [Developer Certificate of Origin](https://developercertificate.org)) — it states you have the right to contribute the code.
+5. **Test locally**: `python -m unittest discover -s tests` and `claude plugin validate .` must pass.
+6. **Open a pull request** against `main` and fill in the template (what/why, how you verified it, checklist).
+7. **CI**: for first-time contributors the maintainer approves the workflow run before it starts; Linux and Windows jobs must be green.
+8. **Review**: the code owner (`.github/CODEOWNERS`) must approve; all review threads must be resolved; a new push dismisses an old approval.
+9. **Merge**: the maintainer squash- or rebase-merges (linear history, no merge commits); the branch is deleted automatically.
+
+Enforced on GitHub: `main` can't be pushed to, force-pushed or deleted; PRs need code-owner approval and resolved conversations; release tags can only be created, moved or deleted by the maintainer; workflows from outside contributors need approval; secret scanning push protection blocks commits containing credentials.
+
+## Pull request checklist
 1. One topic per PR; describe the problem and how you verified the fix (test, eval or a real run).
 2. Add or update a test for behaviour changes (`tests/test_contracts.py`).
 3. CI must be green (Linux + Windows).

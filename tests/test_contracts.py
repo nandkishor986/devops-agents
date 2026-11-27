@@ -408,9 +408,101 @@ class Learning(unittest.TestCase):
 
     def test_agents_have_learning_and_handoffs(self):
         for f in (ROOT / "agents").glob("*.md"):
+            if f.stem == "overseer":      # the monitor curates memory; it does no domain work to hand off
+                continue
             t = f.read_text(encoding="utf-8")
             self.assertIn("## Lessons", t, f.name)
             self.assertIn("handoff:<terraform|k8s|docker|finops>:", t, f.name)
+            self.assertIn("cortexweave.py search", t, f.name)
+
+
+class CortexWeave(unittest.TestCase):
+    """Procedural memory: activity log, harvest queue, capsule contract, versioned library, search/pull."""
+
+    GOOD = {"slug": "fix-azurerm-missing-location", "agents": ["terraform-engineer", "cortex"], "tags": ["terraform", "azurerm"],
+            "description": "Use when terraform validate fails with 'Missing required argument location' on azurerm resources.",
+            "procedure": ["Run terraform validate -no-color and note each resource address.",
+                          "Add location = var.location (or the resource group's location) to each one.",
+                          "Re-run terraform validate until it prints Success."],
+            "failure_modes": [{"symptom": "validate still fails on a module", "cause": "module lacks a location variable",
+                               "fix": "add variable \"location\" to the module and pass it from the root"}],
+            "validator": "terraform validate prints 'Success! The configuration is valid.'"}
+
+    def setUp(self):
+        import importlib
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.saved = os.environ.get("INFRACORTEX_HOME")
+        os.environ["INFRACORTEX_HOME"] = self.tmp
+        import cortexweave
+        self.cw = importlib.reload(cortexweave)
+
+    def tearDown(self):
+        import shutil
+        if self.saved is None:
+            os.environ.pop("INFRACORTEX_HOME", None)
+        else:
+            os.environ["INFRACORTEX_HOME"] = self.saved
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def transcript(self, failed: bool) -> str:
+        rows = [{"message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t1", "name": "Bash",
+                                                               "input": {"command": "terraform validate -no-color"}}]}},
+                {"message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t1", "is_error": failed,
+                                                          "content": "Exit code 1\nError: Missing required argument \"location\""}]}}]
+        p = Path(self.tmp) / f"t-{failed}.jsonl"
+        p.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+        return str(p)
+
+    def test_capsule_contract(self):
+        self.assertEqual(self.cw.validate(self.GOOD), [])
+        thin = {"slug": "x", "agents": ["terraform-engineer"], "description": "fix it", "procedure": ["do it"]}
+        errs = " ".join(self.cw.validate(thin))
+        for part in ("description", "procedure", "validator"):
+            self.assertIn(part, errs)
+        leaky = dict(self.GOOD, heuristics=["subscription 0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0 uses client_secret=abc123XYZ"])
+        self.assertTrue(any("secret" in e for e in self.cw.validate(leaky)))
+
+    def test_versioned_save_search_pull(self):
+        self.assertEqual(self.cw.save(dict(self.GOOD), ["run1"])["version"], 1)
+        self.assertEqual(self.cw.save(dict(self.GOOD, heuristics=["check modules first"]), ["run2"])["version"], 2)
+        self.cw.save({**self.GOOD, "slug": "docker-healthcheck-curl-missing", "agents": ["docker-engineer"],
+                      "description": "Use when a Docker HEALTHCHECK fails because curl is not in the image (busybox/alpine).",
+                      "tags": ["docker", "healthcheck"]})
+        hits = self.cw.search("terraform validate missing location")
+        self.assertEqual(hits[0]["slug"], "fix-azurerm-missing-location")
+        self.assertEqual(hits[0]["version"], 2)
+        self.assertEqual([h["slug"] for h in self.cw.search("healthcheck curl", agent="docker-engineer")], ["docker-healthcheck-curl-missing"])
+        self.assertEqual(self.cw.search("healthcheck curl", agent="finops-analyst"), [])
+        md = self.cw.pull("fix-azurerm-missing-location")
+        self.assertIn("## Procedure", md)
+        self.assertIn("check modules first", md)
+        meta = json.loads((Path(self.tmp) / "cortexweave/skills/fix-azurerm-missing-location/meta.json").read_text())
+        self.assertEqual((meta["versions"], meta["uses"]), ([1, 2], 1))
+
+    def test_selector_queues_only_runs_worth_learning(self):
+        self.cw.record_run({"run_id": "clean", "agent": "terraform-engineer", "status": "PASS"}, self.transcript(False))
+        self.cw.record_run({"run_id": "bad", "agent": "terraform-engineer", "status": "FAIL"}, self.transcript(True))
+        self.cw.record_run({"run_id": "ov", "agent": "overseer", "status": "DONE"}, self.transcript(True))
+        q = json.loads((Path(self.tmp) / "cortexweave/queue.json").read_text())["items"]
+        self.assertEqual([i["run_id"] for i in q], ["bad"])
+        self.assertIn("terraform validate", q[0]["failed"][0]["call"])
+        self.assertIn("Missing required argument", q[0]["failed"][0]["error"])
+        self.assertEqual(self.cw.stats(1)["agents"]["terraform-engineer"]["runs"], 2)
+        self.cw.save(dict(self.GOOD), ["bad"])
+        self.assertEqual(json.loads((Path(self.tmp) / "cortexweave/queue.json").read_text())["items"][0]["state"], "woven")
+
+    def test_hook_records_agent_stop(self):
+        env = dict(os.environ, INFRACORTEX_HOME=self.tmp, DEVOPS_HUD="off", DEVOPS_LEARN="off")
+        report = {"v": 1, "agent": "terraform", "task": "review", "status": "FAIL", "summary": "1 high", "findings": [
+            {"id": "TF-SEC-003", "sev": "HIGH", "file": "kv.tf", "line": 3, "issue": "public", "fix": "pe"}]}
+        d = {"hook_event_name": "SubagentStop", "agent_type": "infracortex:terraform-engineer", "agent_id": "a9",
+             "cwd": "C:/work/payments", "last_assistant_message": json.dumps(report), "agent_transcript_path": self.transcript(True)}
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "agent_events.py")], input=json.dumps(d), text=True, env=env, check=True)
+        day = next((Path(self.tmp) / "cortexweave/activity").glob("*.jsonl"))
+        run = json.loads(day.read_text().splitlines()[-1])
+        self.assertEqual((run["agent"], run["status"], run["project"], run["failed_steps"]), ("terraform-engineer", "FAIL", "payments", 1))
+        self.assertEqual(run["findings_by_sev"], {"HIGH": 1})
 
 
 if __name__ == "__main__":

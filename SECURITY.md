@@ -11,6 +11,7 @@ In scope, for example:
 
 ## What the toolkit stores locally
 - `~/.infracortex/learning/*.json` — normalised error lines of failed agent commands (paths, quoted strings and numbers are replaced with placeholders).
+- `~/.infracortex/cortexweave/` — CortexWeave: activity log of agent runs (agent, project folder name, status, step counts, shortened failed commands/errors), the harvest queue (incl. local transcript paths) and the woven skills. Skills are rejected if they contain secret-, ID- or public-IP-like strings. `INFRACORTEX_WEAVE=off` disables it.
 - `~/.infracortex/hud/state.json` — agent names, project folder names, last tool steps (shortened), timings.
 - `~/.claude/agent-memory/infracortex-*/MEMORY.md` — conventions and lessons written by the agents (instructed never to store secrets, IDs or IPs).
 Nothing is uploaded by the toolkit itself. Delete those folders at any time; `DEVOPS_HUD=off` and `DEVOPS_LEARN=off` disable the HUD and learning.
