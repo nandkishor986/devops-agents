@@ -20,7 +20,7 @@ jobs:
         run: node extensions/vscode/test/parse.test.js && node extensions/vscode/test/activate.test.js
       - name: Build extensions (.mcpb + .vsix)
         run: bash extensions/build.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: extensions, path: dist/ }
       - name: Docker diagnose→fix→verify loop (real containers)
         run: BASE=busybox:1.37 bash tests/docker_fix_loop.sh
