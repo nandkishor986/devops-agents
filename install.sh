@@ -10,8 +10,8 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 DEST="$CLAUDE_DIR/infracortex"
 MCP=1; HOOK=1; UNINSTALL=0
 for a in "$@"; do case "$a" in --no-mcp) MCP=0;; --no-hook) HOOK=0;; --uninstall) UNINSTALL=1;; esac; done
-AGENTS=(terraform-engineer k8s-troubleshooter docker-engineer finops-analyst)
-SKILLS=(terraform-expert k8s-expert docker-expert finops-expert azure-diagrams provision tf-review k8s-debug docker-audit finops-scan)
+AGENTS=(terraform-expert kubernetes-expert docker-expert finops-expert)
+SKILLS=(terraform-playbook kubernetes-playbook docker-playbook finops-playbook azure-diagrams provision tf-review k8s-debug docker-audit finops-scan)
 PY=$(for c in python3 python; do command -v "$c" >/dev/null && "$c" -c "" 2>/dev/null && { command -v "$c"; break; }; done)
 [[ -n "$PY" ]] || { echo "python3 is required"; exit 1; }
 
@@ -42,7 +42,7 @@ for s in "${SKILLS[@]}"; do
   rm -rf "$CLAUDE_DIR/skills/$s"; cp -R "$SRC/skills/$s" "$CLAUDE_DIR/skills/$s"
   find "$CLAUDE_DIR/skills/$s" -name '*.md' | while read -r f; do subst "$f"; done
 done
-mkdir -p "$DEST/skills"; for s in terraform-expert k8s-expert docker-expert finops-expert; do rm -rf "$DEST/skills/$s"; ln -s "$CLAUDE_DIR/skills/$s" "$DEST/skills/$s" 2>/dev/null || cp -R "$CLAUDE_DIR/skills/$s" "$DEST/skills/$s"; done
+mkdir -p "$DEST/skills"; for s in terraform-playbook kubernetes-playbook docker-playbook finops-playbook; do rm -rf "$DEST/skills/$s"; ln -s "$CLAUDE_DIR/skills/$s" "$DEST/skills/$s" 2>/dev/null || cp -R "$CLAUDE_DIR/skills/$s" "$DEST/skills/$s"; done
 echo "✓ agents + skills → $CLAUDE_DIR"
 
 if [[ $MCP -eq 1 ]]; then
@@ -67,7 +67,7 @@ if not any("infracortex" in h.get("command","") or "guard.py" in h.get("command"
 gate=guard.replace("guard.py","contract_gate.py")
 stop=s["hooks"].setdefault("SubagentStop",[])
 if not any("contract_gate.py" in h.get("command","") for m in stop for h in m.get("hooks",[])):
-    stop.append({"matcher":"^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst)$","hooks":[{"type":"command","command":f'python3 "{gate}" 2>/dev/null || python "{gate}"',"timeout":10}]})
+    stop.append({"matcher":"^(infracortex:)?(terraform-expert|kubernetes-expert|docker-expert|finops-expert)$","hooks":[{"type":"command","command":f'python3 "{gate}" 2>/dev/null || python "{gate}"',"timeout":10}]})
 p.write_text(json.dumps(s,indent=2),encoding="utf-8"); print("✓ guard + contract-gate hooks merged into", p)
 EOF
 fi
@@ -79,4 +79,4 @@ for t in terraform tflint trivy checkov infracost kubectl kubeconform kube-linte
 done
 "$PY" -c "import diagrams" 2>/dev/null && echo "  ✓ python diagrams" || echo "  · python diagrams (pip install diagrams) for PNG/SVG diagrams"
 command -v cli-anything-drawio >/dev/null && echo "  ✓ cli-anything-drawio" || echo "  · cli-anything-drawio (optional: edit/export .drawio, see README)"
-echo "Restart Claude Code, then try:  /tf-review ./infra   or   'use the k8s-troubleshooter on namespace payments'"
+echo "Restart Claude Code, then try:  /tf-review ./infra   or   'use the kubernetes-expert on namespace payments'"

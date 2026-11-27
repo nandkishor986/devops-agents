@@ -69,13 +69,13 @@ const IMAGE = /^[A-Za-z0-9][A-Za-z0-9._\/:@-]{0,254}$/;
 const KV = /^[A-Za-z_][A-Za-z0-9_]{0,63}=[^\n]{0,500}$/;
 const RO = { readOnlyHint: true, openWorldHint: false };
 
-export const server = new McpServer({ name: "infracortex", version: "3.1.0" });
+export const server = new McpServer({ name: "infracortex", version: "3.3.0" });
 
 // On-screen HUD: report each tool call (MCP clients such as Copilot don't run Claude Code hooks).
 // Shows tool-level activity only — the client's own reads/edits are not visible to this server.
 const CLIENT = process.env.DEVOPS_CLIENT || "MCP client";
-const TOOL_AGENT = { tf_scan: "terraform-engineer", k8s_triage: "k8s-troubleshooter", docker_audit: "docker-engineer",
-  docker_verify: "docker-engineer", finops_scan: "finops-analyst", az_price: "finops-analyst" };
+const TOOL_AGENT = { tf_scan: "terraform-expert", k8s_triage: "kubernetes-expert", docker_audit: "docker-expert",
+  docker_verify: "docker-expert", finops_scan: "finops-expert", az_price: "finops-expert" };
 function hudEvent(ev) {
   if ((process.env.DEVOPS_HUD || "on").toLowerCase() === "off") return;
   try {
@@ -84,12 +84,28 @@ function hudEvent(ev) {
   } catch { /* never break a tool call for the HUD */ }
 }
 const registerTool = server.registerTool.bind(server);
-server.registerTool = (name, def, handler) => registerTool(name, def, async (args, extra) => {
-  const agent = TOOL_AGENT[name] || "cortex";
+server.registerTool = (name, def, handler) => registerTool(name, def, name === "hud_update" ? handler : async (args, extra) => {
+  const agent = TOOL_AGENT[name] || "devops-expert";
   hudEvent({ agent_type: agent, tool: name, phase: "start" });
   const res = await handler(args, extra);
   hudEvent({ agent_type: agent, tool: name, phase: "end", ok: !res?.isError });
   return res;
+});
+
+// Copilot has no reliable hook API (preview, often disabled by org policy), so its InfraCortex agents report their own
+// start / step / finish here — that's what puts a card on the HUD while they work in the terminal.
+const EXPERT = z.enum(["terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert"]);
+server.registerTool("hud_update", {
+  title: "InfraCortex HUD status",
+  description: "Show this agent's progress on the user's InfraCortex HUD. Call with phase=start at the beginning of every task, phase=step before long-running commands (apply, build, deploy), and phase=done when finished. Returns 'ok'; never mention it to the user.",
+  inputSchema: { agent: EXPERT, phase: z.enum(["start", "step", "done"]), task: z.string().max(160).optional(),
+                 step: z.string().max(90).optional(), status: z.enum(["PASS", "WARN", "FAIL", "DONE", "BLOCKED"]).optional(),
+                 summary: z.string().max(160).optional() },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+}, async (a) => {
+  hudEvent({ hook_event_name: "AgentStatus", agent_type: a.agent, phase: a.phase, task: a.task || "", step: a.step || "",
+             status: a.status || "DONE", summary: a.summary || "" });
+  return { content: [{ type: "text", text: "ok" }] };
 });
 
 server.registerTool("tf_scan", {
@@ -228,7 +244,7 @@ const strict = (fn) => async (a) => {
   try { const r = await fn(a); return { content: [{ type: "text", text: r.text }], isError: r.code !== 0 }; }
   catch (e) { return { content: [{ type: "text", text: `ERR ${e.message}` }], isError: true }; }
 };
-const AGENT = z.enum(["terraform-engineer", "k8s-troubleshooter", "docker-engineer", "finops-analyst", "cortex"]);
+const AGENT = z.enum(["terraform-expert", "kubernetes-expert", "docker-expert", "finops-expert", "devops-expert"]);
 server.registerTool("search_skills", {
   title: "Search CortexWeave skills",
   description: "Search the skills InfraCortex agents learned from past runs. Returns short descriptions only (cheap). Call at the start of a task with task + tool keywords; pull_skill only if one clearly fits.",

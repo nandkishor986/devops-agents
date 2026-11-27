@@ -27,15 +27,15 @@ if (process.platform === "win32") {
 
 // bundled agent/skill files get the real install path in place of the placeholder (idempotent)
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ic-"));
-fs.mkdirSync(path.join(tmp, "agents")); fs.mkdirSync(path.join(tmp, "skills", "terraform-expert"), { recursive: true });
+fs.mkdirSync(path.join(tmp, "agents")); fs.mkdirSync(path.join(tmp, "skills", "terraform-playbook"), { recursive: true });
 fs.writeFileSync(path.join(tmp, "agents", "a.agent.md"), `read ${setup.PLACEHOLDER}/contracts/RULES.md`);
-fs.writeFileSync(path.join(tmp, "skills", "terraform-expert", "SKILL.md"), `run ${setup.PLACEHOLDER}/scripts/tf-scan.sh`);
-fs.writeFileSync(path.join(tmp, "skills", "terraform-expert", "notes.txt"), setup.PLACEHOLDER);   // non-.md left alone
+fs.writeFileSync(path.join(tmp, "skills", "terraform-playbook", "SKILL.md"), `run ${setup.PLACEHOLDER}/scripts/tf-scan.sh`);
+fs.writeFileSync(path.join(tmp, "skills", "terraform-playbook", "notes.txt"), setup.PLACEHOLDER);   // non-.md left alone
 const outLines = []; global.__out = outLines;
 assert.strictEqual(setup.fixBundledPaths(tmp), 2);
 const fwd = tmp.replace(/\\/g, "/");
 assert.strictEqual(fs.readFileSync(path.join(tmp, "agents", "a.agent.md"), "utf8"), `read ${fwd}/contracts/RULES.md`);
-assert.strictEqual(fs.readFileSync(path.join(tmp, "skills", "terraform-expert", "SKILL.md"), "utf8"), `run ${fwd}/scripts/tf-scan.sh`);
+assert.strictEqual(fs.readFileSync(path.join(tmp, "skills", "terraform-playbook", "SKILL.md"), "utf8"), `run ${fwd}/scripts/tf-scan.sh`);
 assert.strictEqual(setup.fixBundledPaths(tmp), 0, "second run changes nothing");
 
 // which(): finds an executable on a given PATH and ignores missing ones

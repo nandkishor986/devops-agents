@@ -6,8 +6,8 @@
 
 | | GitHub Copilot | Claude Code |
 |---|---|---|
-| Agents | **terraform-engineer · k8s-troubleshooter · docker-engineer · finops-analyst · cortex** in the agent picker — ready immediately | same agents + **overseer**, after one click on **Enable in Claude Code** |
-| Skills | `terraform-expert`, `k8s-expert`, `docker-expert`, `finops-expert`, `azure-diagrams` | the same, as `/infracortex:terraform-expert …` |
+| Agents | **terraform-expert · kubernetes-expert · docker-expert · finops-expert · devops-expert** in the agent picker — ready immediately | same agents + **overseer**, after one click on **Enable in Claude Code** |
+| Skills | `terraform-playbook`, `kubernetes-playbook`, `docker-playbook`, `finops-playbook`, `azure-diagrams` | the same, as `/infracortex:terraform-playbook …` |
 | Tools | built-in **InfraCortex MCP server** (no `mcp.json`, no Node install): `tf_scan`, `k8s_triage`, `docker_audit`, `docker_verify`, `finops_scan`, `az_price`, `azure_diagram`, `check_command`, `search_skills`, `pull_skill`, `agent_activity` | the plugin's scripts + official Terraform / Azure / Kubernetes MCP servers |
 | Safety & learning | Copilot asks before running commands | **guard hook** (blocks destroy / auto-approve / RG deletes), typed reports, **self-learning**, **CortexWeave** skill memory with human review, live on-screen **HUD** |
 
@@ -17,8 +17,8 @@
 3. **Enable in Claude Code** (optional) — adds the InfraCortex plugin to Claude Code.
 
 Then:
-- **Copilot:** open Copilot Chat → **Agent** mode → pick **terraform-engineer** → *"review infra/ for security"*.
-- **Claude Code:** `/infracortex:terraform-expert review the KV module in infra/` · `/infracortex:team . review` · `/infracortex:cortex <task>`.
+- **Copilot:** open Copilot Chat → **Agent** mode → pick **terraform-expert** → *"review infra/ for security"*.
+- **Claude Code:** `/infracortex:terraform-playbook review the KV module in infra/` · `/infracortex:team . review` · `/infracortex:devops-expert <task>`.
 
 The status bar shows **InfraCortex ready** or what's missing; click it to re-check.
 

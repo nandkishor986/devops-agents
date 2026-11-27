@@ -1,6 +1,6 @@
 ---
 name: team
-description: Run the DevOps agents as one team on a repo or folder — picks terraform-engineer, k8s-troubleshooter, docker-engineer and finops-analyst by what the folder contains, runs them in parallel, routes their `handoff:` items to each other, and merges one report. Use for "review everything", "full platform review", "check this repo end to end", or any task spanning Terraform + Kubernetes + Docker + cost.
+description: Run the DevOps agents as one team on a repo or folder — picks terraform-expert, kubernetes-expert, docker-expert and finops-expert by what the folder contains, runs them in parallel, routes their `handoff:` items to each other, and merges one report. Use for "review everything", "full platform review", "check this repo end to end", or any task spanning Terraform + Kubernetes + Docker + cost.
 argument-hint: "[dir] [goal, e.g. review | security | cost | fix]"
 ---
 
@@ -11,12 +11,12 @@ Keep your own context small: never read the repo yourself; pass briefs, keep onl
 ## 1. Detect stacks (one Glob each, count only) in `$ARGUMENTS` dir (default `.`)
 | Found | Agent | Brief scope |
 |---|---|---|
-| `**/*.tf` | `terraform-engineer` | the dirs holding .tf |
-| k8s YAML (`kind:` in `**/*.y*ml`), `Chart.yaml`, `kustomization.yaml` | `k8s-troubleshooter` | manifests/charts (files only unless the user asked for live cluster triage) |
-| `**/Dockerfile*`, `compose*.y*ml` | `docker-engineer` | each Dockerfile |
-| .tf present and goal mentions cost/FinOps/"everything" | `finops-analyst` | cost of the .tf dirs (Infracost or price lookups) |
+| `**/*.tf` | `terraform-expert` | the dirs holding .tf |
+| k8s YAML (`kind:` in `**/*.y*ml`), `Chart.yaml`, `kustomization.yaml` | `kubernetes-expert` | manifests/charts (files only unless the user asked for live cluster triage) |
+| `**/Dockerfile*`, `compose*.y*ml` | `docker-expert` | each Dockerfile |
+| .tf present and goal mentions cost/FinOps/"everything" | `finops-expert` | cost of the .tf dirs (Infracost or price lookups) |
 
-Small cross-domain task (≤ ~15 files, e.g. "Dockerfile + manifest + ACR for one service")? Use the single `cortex` instead of several specialists — one context, cheaper. Use the specialists in parallel for anything bigger.
+Small cross-domain task (≤ ~15 files, e.g. "Dockerfile + manifest + ACR for one service")? Use the single `devops-expert` instead of several specialists — one context, cheaper. Use the specialists in parallel for anything bigger.
 
 Skip agents with nothing to do. If nothing is found, say so and stop.
 

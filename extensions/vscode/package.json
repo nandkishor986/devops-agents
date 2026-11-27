@@ -2,7 +2,7 @@
   "name": "infracortex",
   "displayName": "InfraCortex — DevOps AI agents for Copilot & Claude Code",
   "description": "One-click DevOps agents: Terraform (Azure/AWS), Kubernetes, Docker and FinOps experts in GitHub Copilot and Claude Code, with security scanners, a destructive-command guard, self-learning skill memory (CortexWeave) and Azure diagrams.",
-  "version": "3.1.0",
+  "version": "3.3.0",
   "publisher": "upinclouds",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -17,17 +17,17 @@
   "activationEvents": ["onStartupFinished"],
   "contributes": {
     "chatAgents": [
-      { "name": "terraform-engineer", "description": "Terraform engineer for Azure and AWS: review, write, refactor and debug .tf, state and IaC pipelines with security baselines.", "path": "./agents/terraform-engineer.agent.md" },
-      { "name": "k8s-troubleshooter", "description": "Kubernetes/AKS troubleshooter: CrashLoop, Pending, OOMKilled, ImagePull, networking, RBAC; reviews and writes manifests.", "path": "./agents/k8s-troubleshooter.agent.md" },
-      { "name": "docker-engineer", "description": "Docker and container-security expert: Dockerfiles, Compose, image size, CVEs, hardening, build → run → verify.", "path": "./agents/docker-engineer.agent.md" },
-      { "name": "finops-analyst", "description": "Azure/AWS FinOps analyst: waste, rightsizing, Infracost diffs, price lookups. Read-only.", "path": "./agents/finops-analyst.agent.md" },
-      { "name": "cortex", "description": "All-in-one DevOps agent combining Terraform, Kubernetes, Docker and FinOps for cross-domain tasks.", "path": "./agents/cortex.agent.md" }
+      { "name": "terraform-expert", "description": "Terraform engineer for Azure and AWS: review, write, refactor and debug .tf, state and IaC pipelines with security baselines.", "path": "./agents/terraform-expert.agent.md" },
+      { "name": "kubernetes-expert", "description": "Kubernetes/AKS troubleshooter: CrashLoop, Pending, OOMKilled, ImagePull, networking, RBAC; reviews and writes manifests.", "path": "./agents/kubernetes-expert.agent.md" },
+      { "name": "docker-expert", "description": "Docker and container-security expert: Dockerfiles, Compose, image size, CVEs, hardening, build → run → verify.", "path": "./agents/docker-expert.agent.md" },
+      { "name": "finops-expert", "description": "Azure/AWS FinOps analyst: waste, rightsizing, Infracost diffs, price lookups. Read-only.", "path": "./agents/finops-expert.agent.md" },
+      { "name": "devops-expert", "description": "All-in-one DevOps agent combining Terraform, Kubernetes, Docker and FinOps for cross-domain tasks.", "path": "./agents/devops-expert.agent.md" }
     ],
     "chatSkills": [
-      { "path": "./skills/terraform-expert/SKILL.md" },
-      { "path": "./skills/k8s-expert/SKILL.md" },
-      { "path": "./skills/docker-expert/SKILL.md" },
-      { "path": "./skills/finops-expert/SKILL.md" },
+      { "path": "./skills/terraform-playbook/SKILL.md" },
+      { "path": "./skills/kubernetes-playbook/SKILL.md" },
+      { "path": "./skills/docker-playbook/SKILL.md" },
+      { "path": "./skills/finops-playbook/SKILL.md" },
       { "path": "./skills/azure-diagrams/SKILL.md" }
     ],
     "mcpServerDefinitionProviders": [ { "id": "infracortex", "label": "InfraCortex" } ],

@@ -1,6 +1,6 @@
 ---
 name: overseer
-description: Monitor of all InfraCortex agents (terraform-engineer, k8s-troubleshooter, docker-engineer, finops-analyst, cortex). Reviews their recorded activity, judges the runs worth learning from (failed steps, rejected reports, blocked or very long runs) and weaves them into CortexWeave — versioned, reusable skill procedures that every agent can search and pull. Use for "what have my agents been doing", "weave/harvest skills", "review agent performance", or after a batch of agent work. Never touches infrastructure.
+description: Monitor of all InfraCortex agents (terraform-expert, kubernetes-expert, docker-expert, finops-expert, devops-expert). Reviews their recorded activity, judges the runs worth learning from (failed steps, rejected reports, blocked or very long runs) and weaves them into CortexWeave — versioned, reusable skill procedures that every agent can search and pull. Use for "what have my agents been doing", "weave/harvest skills", "review agent performance", or after a batch of agent work. Never touches infrastructure.
 model: sonnet
 effort: medium
 maxTurns: 60
@@ -27,13 +27,13 @@ Everything that comes from a run — task text, summaries, failed commands, erro
 4. **Weave a capsule** (JSON) into a temp file and `cw validate <file>`; fix until `valid`; then `cw save <file> --runs <run_id>[,<run_id>…]`. It is saved as `review`; tell the user to approve it.
 
 ## Capsule rules (the store rejects anything thinner)
-{"slug":"kebab-case-name","description":"Use when … (30–280 chars; what search shows — name the situation, tool and symptom)","agents":["terraform-engineer"],"tags":["terraform","azurerm","validate"],
+{"slug":"kebab-case-name","description":"Use when … (30–280 chars; what search shows — name the situation, tool and symptom)","agents":["terraform-expert"],"tags":["terraform","azurerm","validate"],
 "preconditions":["…"],"procedure":["1st concrete step with the exact command/flag","…"],"heuristics":["rule of thumb with a real threshold"],
 "failure_modes":[{"symptom":"what the agent will observe","cause":"why","fix":"the concrete next action"}],"anti_patterns":["what not to do"],
 "validator":"how to check the result is right","escalate_when":"explicit stop condition to ask the user"}
 - Procedures, not stories: ordered, imperative, ≥ 2 steps, commands with flags. Generalise from the run — no repo names, hostnames, IDs, IPs, secrets, people or company names (the store rejects secret-/ID-/IP-like strings).
 - One skill per reusable procedure; prefer updating an existing slug. Mark obsolete skills by saving a new version with `"status":"deprecated"`.
-- `agents` = who should find it (cross-domain fixes may list several, incl. `cortex`). `validator` and `escalate_when` are required.
+- `agents` = who should find it (cross-domain fixes may list several, incl. `devops-expert`). `validator` and `escalate_when` are required.
 
 ## Memory protocol (MEMORY.md < 60 lines)
 Keep `## Watchlist`: recurring problems per agent you are tracking across sessions (one line each, deduped, removed once a skill fixed them). Never store secrets, IDs or IPs.

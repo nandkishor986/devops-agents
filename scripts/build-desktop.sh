@@ -7,7 +7,7 @@ set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$SRC/dist"; rm -rf "$OUT"; mkdir -p "$OUT"
 PY=$(for c in python3 python; do command -v "$c" >/dev/null && "$c" -c "" 2>/dev/null && { command -v "$c"; break; }; done)
-for s in terraform-expert k8s-expert docker-expert finops-expert azure-diagrams; do
+for s in terraform-playbook kubernetes-playbook docker-playbook finops-playbook azure-diagrams; do
   tmp=$(mktemp -d); cp -R "$SRC/skills/$s" "$tmp/$s"; mkdir -p "$tmp/$s/scripts" "$tmp/$s/contracts"
   cp "$SRC"/scripts/*.sh "$SRC"/scripts/*.py "$tmp/$s/scripts/"; cp "$SRC"/contracts/* "$tmp/$s/contracts/"
   [[ "$s" == azure-diagrams ]] && cp -R "$SRC/examples" "$tmp/$s/examples"

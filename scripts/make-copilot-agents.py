@@ -27,7 +27,11 @@ NOTE = ("> **Copilot edition.** No persistent memory between chats. Prefer the `
         "({tools}) over running the scripts in a terminal — same output, and you can see each call in chat. "
         "Never run terraform destroy, `-auto-approve`, az group delete or kubectl delete ns. Changes (apply, kubectl apply, push) "
         "need the user's explicit go-ahead in this chat; once given, run them yourself (Copilot shows the command for "
-        "confirmation) — never tell the user you can't.\n\n")
+        "confirmation) — never tell the user you can't.\n\n "
+        "> **Show your progress on the user's InfraCortex HUD** (silently, never mention it): first action of every task → "
+        "`hud_update` with `agent: \"{name}\"`, `phase: \"start\"`, `task: \"<what you're doing, ≤ 10 words>\"`; before a "
+        "long-running command (apply, build, deploy, scan) → `phase: \"step\"`, `step: \"<the command>\"`; last action → "
+        "`phase: \"done\"`, `status` (PASS/WARN/FAIL/DONE/BLOCKED) and a one-line `summary`.\n\n")
 COPILOT_OUTPUT = """## Output (answer the user directly — Markdown, never raw JSON)
 1. **Status:** PASS / WARN / FAIL / DONE / BLOCKED — one sentence on what you found or did.
 2. **Findings** (if any): table `Severity | Rule | File:line | Issue | Fix`, CRITICAL → LOW, at most 25 rows; group repeats.
@@ -62,7 +66,7 @@ def convert(src: Path, root: str | None = None) -> tuple[str, str]:
     desc = re.sub(r"\s*Returns a typed AgentReport[^.]*\.", "", desc)
     used = sorted({t for s, t in TOOLS.items() if s in body})
     head = f"---\nname: {name}\ndescription: {desc!r}\n---\n\n"
-    return name, head + NOTE.format(tools=", ".join(f"`{t}`" for t in used) or "tf_scan, k8s_triage, …") + body
+    return name, head + NOTE.format(name=name, tools=", ".join(f"`{t}`" for t in used) or "tf_scan, k8s_triage, …") + body
 
 
 def main() -> int:

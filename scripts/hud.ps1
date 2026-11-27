@@ -32,11 +32,11 @@ public class DevOpsHud : Form {
 
     static readonly string DOT = "  " + (char)0xB7 + "  ";
     static readonly Dictionary<string, string[]> Meta = new Dictionary<string, string[]> {
-        { "terraform-engineer", new[] { "Terraform Engineer", "TF", "#8B5CF6" } },
-        { "k8s-troubleshooter", new[] { "Kubernetes Troubleshooter", "K8s", "#3B82F6" } },
-        { "docker-engineer",    new[] { "Docker Engineer", "DK", "#06B6D4" } },
-        { "finops-analyst",     new[] { "FinOps Analyst", "FO", "#22C55E" } },
-        { "cortex",             new[] { "Cortex", "CX", "#F97316" } },
+        { "terraform-expert",  new[] { "Terraform Expert", "TF", "#8B5CF6" } },
+        { "kubernetes-expert", new[] { "Kubernetes Expert", "K8s", "#3B82F6" } },
+        { "docker-expert",     new[] { "Docker Expert", "DK", "#06B6D4" } },
+        { "finops-expert",     new[] { "FinOps Expert", "FO", "#22C55E" } },
+        { "devops-expert",     new[] { "DevOps Expert", "DO", "#F97316" } },
         { "overseer",           new[] { "Overseer", "OV", "#14B8A6" } } };
 
     readonly string stateDir;

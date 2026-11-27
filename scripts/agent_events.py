@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 HOME = Path(os.environ.get("INFRACORTEX_HOME") or Path.home() / ".infracortex")
 HUD_DIR, LEARN_DIR = HOME / "hud", HOME / "learning"
-AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex|overseer)$")
+AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-expert|kubernetes-expert|docker-expert|finops-expert|devops-expert|overseer)$")
 MAX_MISTAKES, INJECT_TOP = 60, 6
 # failures that are normal control flow, not mistakes (grep/test/diff exit 1)
 BENIGN = re.compile(r"^\s*(grep|rg|test|\[|diff|cmp|command -v|which|ls)\b")
@@ -235,10 +235,63 @@ def on_start(d: dict, agent: str) -> dict | None:
     return None
 
 
+def on_status(d: dict, agent: str) -> None:
+    """A Copilot agent reporting its own progress via the hud_update MCP tool (Copilot has no usable hook API)."""
+    cid = f"copilot:{d.get('session', '')}:{agent}"
+    phase = d.get("phase")
+
+    def upd(a: dict) -> None:
+        e = a.get(cid)
+        if phase == "start" or e is None or e.get("ended"):
+            e = a[cid] = {"type": agent, "status": "running", "started": time.time(), "steps": 0, "errors": 0,
+                          "history": [], "source": str(d.get("source") or "Copilot"), "action": "starting",
+                          "project": Path(str(d.get("cwd") or ".")).name, "task": redact_short(d.get("task"))}
+        e["seen"] = time.time()
+        if phase == "step" and d.get("step"):
+            e["steps"] = e.get("steps", 0) + 1
+            _step(e, redact_short(d.get("step"), 90))
+        elif phase == "done":
+            e.update(status="done", result=str(d.get("status") or "DONE"), ended=time.time(), action="finished",
+                     summary=redact_short(d.get("summary")))
+    hud(upd)
+    if phase == "start":
+        ensure_hud()
+
+
+def redact_short(text, n: int = 140) -> str:
+    try:
+        sys.path.insert(0, str(HERE))
+        import cortexweave
+        return cortexweave.redact(" ".join(str(text or "").split()))[:n]
+    except Exception:  # noqa: BLE001
+        return " ".join(str(text or "").split())[:n]
+
+
 def on_mcp(d: dict, agent: str) -> None:
-    """A tool call on the infracortex MCP server. One card per (client process, domain); idle between calls."""
-    aid = f"mcp:{d.get('session', '')}:{agent}"
+    """A tool call on the infracortex MCP server. One card per (client process, domain); idle between calls.
+    While a Copilot agent card (hud_update) is open in the same window, the call becomes a step on that card."""
     tool, phase = str(d.get("tool", "")), d.get("phase")
+    try:
+        cards = json.loads((HUD_DIR / "state.json").read_text(encoding="utf-8")).get("agents", {})
+    except (OSError, ValueError):
+        cards = {}
+    open_card = next((k for k, v in cards.items() if k.startswith(f"copilot:{d.get('session', '')}:") and not v.get("ended")), None)
+    if open_card:
+        def step(a: dict) -> None:
+            e = a.get(open_card)
+            if not e:
+                return
+            e["seen"] = time.time()
+            if phase == "start":
+                e["steps"] = e.get("steps", 0) + 1
+                _step(e, f"mcp {tool}")
+            elif not d.get("ok", True):
+                e["errors"] = e.get("errors", 0) + 1
+                if e.get("history"):
+                    e["history"][-1]["ok"] = False
+        hud(step)
+        return
+    aid = f"mcp:{d.get('session', '')}:{agent}"
 
     def upd(a: dict) -> None:
         e = a.get(aid)
@@ -260,6 +313,55 @@ def on_mcp(d: dict, agent: str) -> None:
     hud(upd)
     if phase == "start":
         ensure_hud()
+
+
+PLAYBOOK_AGENT = {"terraform-playbook": "terraform-expert", "kubernetes-playbook": "kubernetes-expert",
+                  "docker-playbook": "docker-expert", "finops-playbook": "finops-expert", "azure-diagrams": "terraform-expert"}
+
+
+def on_main(d: dict, ev: str) -> None:
+    """Work done in the main conversation (no subagent): a card starts when an InfraCortex playbook skill is loaded,
+    follows that session's tool calls, and finishes when the turn ends (Stop)."""
+    sid = str(d.get("session_id") or "")
+    if not sid:
+        return
+    cid = f"main:{sid}"
+    tool, inp = str(d.get("tool_name", "")), d.get("tool_input") or {}
+    if ev == "PreToolUse" and tool == "Skill":
+        m = re.match(r"^(?:infracortex:)?([\w-]+)$", str(inp.get("skill") or inp.get("command") or ""))
+        agent = PLAYBOOK_AGENT.get(m.group(1)) if m else None
+        if agent:
+            def start(a: dict) -> None:
+                a[cid] = {"type": agent, "status": "running", "started": time.time(), "seen": time.time(), "steps": 0,
+                          "errors": 0, "history": [], "action": f"using {m.group(1)}", "task": "main conversation",
+                          "source": source(), "project": Path(str(d.get("cwd") or ".")).name}
+            hud(start)
+            ensure_hud()
+        return
+    try:                                         # cheap exit for sessions without an InfraCortex card
+        state = json.loads((HUD_DIR / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    card = state.get("agents", {}).get(cid)
+    if not card or card.get("ended"):
+        return
+
+    def upd(a: dict) -> None:
+        e = a.get(cid)
+        if not e:
+            return
+        e["seen"] = time.time()
+        if ev == "PreToolUse":
+            e["steps"] = e.get("steps", 0) + 1
+            _step(e, short_action(tool, inp))
+        elif ev == "PostToolUseFailure" and not d.get("is_interrupt"):
+            e["errors"] = e.get("errors", 0) + 1
+            if e.get("history"):
+                e["history"][-1]["ok"] = False
+        elif ev == "Stop":
+            e.update(status="done", result="DONE", ended=time.time(), action="finished",
+                     summary=" ".join(str(d.get("last_assistant_message") or "").split())[:140])
+    hud(upd)
 
 
 def on_delegate(d: dict) -> None:
@@ -386,18 +488,20 @@ def main() -> int:
         return 0
     ev = d.get("hook_event_name")
     agent = agent_of(d)
-    if ev == "McpTool" and agent:  # from the infracortex MCP server (Copilot / Claude Desktop)
+    if ev in ("McpTool", "AgentStatus") and agent:  # from the infracortex MCP server (Copilot / Claude Desktop)
         try:
-            on_mcp(d, agent)
+            (on_status if ev == "AgentStatus" else on_mcp)(d, agent)
         except Exception:  # noqa: BLE001
             pass
         return 0
     if not agent:
-        if ev == "PreToolUse" and d.get("tool_name") in ("Agent", "Task"):
-            try:
+        try:
+            if ev == "PreToolUse" and d.get("tool_name") in ("Agent", "Task"):
                 on_delegate(d)
-            except Exception:  # noqa: BLE001
-                pass
+            elif ev in ("PreToolUse", "PostToolUseFailure", "Stop"):
+                on_main(d, ev)           # InfraCortex playbook used directly in the main conversation
+        except Exception:  # noqa: BLE001
+            pass
         return 0
     try:
         out = {"SubagentStart": on_start, "PreToolUse": on_pre, "PostToolUseFailure": on_fail,

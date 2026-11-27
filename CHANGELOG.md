@@ -4,6 +4,25 @@ All notable changes are listed here. Versions follow `.claude-plugin/plugin.json
 
 ## [Unreleased]
 
+## [3.3.0] — approved deployments
+### Added
+- After the user says "apply", the experts deploy end to end, not just `terraform apply`: Helm (`upgrade --install --atomic --wait`), Argo CD (`app sync` + `app wait --health`), Docker build / `compose up` / `run` / push / `az acr build`, and Azure app deploys. The DevOps and Terraform Experts propose a **numbered deploy plan**; one approval runs exactly those steps in order, verifying each and stopping at the first failure.
+### Fixed
+- Guard: `argocd app sync/delete/rollback`, `flux reconcile`, `docker compose down -v`, and `az … deploy/build/import/swap/upgrade/push` ran without a confirmation; they now ask. Read-only commands still pass.
+
+## [3.2.0] — five experts
+### Changed (breaking names)
+- Agents are now five experts: **terraform-expert** (was terraform-engineer), **kubernetes-expert** (k8s-troubleshooter), **docker-expert** (docker-engineer), **finops-expert** (finops-analyst), **devops-expert** (cortex). `overseer` stays as the background monitor.
+- Knowledge skills renamed to playbooks: `terraform-playbook`, `kubernetes-playbook`, `docker-playbook`, `finops-playbook`. `/infracortex:<expert> <task>` now runs the expert **agent** (and shows its result in Markdown).
+- Reports from the all-in-one expert use `"agent": "devops"` again.
+### Added
+- Terraform Expert: provisioning end to end, imports (`terraform query` / import blocks), module refactoring with `moved`, `.tftest.hcl` tests, Azure Verified Modules, Stacks, policy (Terraform Policy / Sentinel / OPA), and architecture diagrams — new playbook references, informed by hashicorp/agent-skills (no files copied).
+- Docker Expert studies the application before writing a Dockerfile (`app-analysis.md`); Kubernetes Expert covers Helm and Argo CD (`helm-argocd.md`); FinOps Expert framed as the costing master.
+- HUD: a playbook used directly in the main Claude Code conversation now gets a card (starts on the skill, follows the turn's steps, finishes on Stop).
+- HUD in **GitHub Copilot**: Copilot's agent hooks are a preview that organisations often disable, so the Copilot experts report start / step / done through a new `hud_update` MCP tool; their other InfraCortex tool calls appear as steps on the same card (one card per expert per window, text redacted).
+### Fixed
+- Agent frontmatter with `: ` in the description is quoted (unquoted values silently dropped all frontmatter); a test guards it.
+
 ## [3.1.0]
 ### Changed
 - **Agents own approved changes.** When the user explicitly says "apply" for a reviewed saved plan, terraform-engineer / cortex run `terraform apply -input=false <plan>` themselves (k8s-troubleshooter: `kubectl apply` of the changed files; docker-engineer: the approved push/rm), then verify. Hard limits unchanged: no `-auto-approve`, no destroy, no re-plan-and-apply; approval is per action; the client still shows the command for one confirmation click. finops-analyst stays read-only.
