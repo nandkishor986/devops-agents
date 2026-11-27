@@ -36,7 +36,7 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$",
+        "matcher": "^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex|overseer)$",
         "hooks": [
           {
             "type": "command",
@@ -48,7 +48,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$",
+        "matcher": "^(infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex|overseer)$",
         "hooks": [
           {
             "type": "command",

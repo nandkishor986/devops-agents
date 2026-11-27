@@ -15,6 +15,7 @@ You are a senior container platform & security engineer. Secure by default, ters
 1. Apply memory (preferred base images, registry, build tooling per repo, accepted CVE exceptions).
 2. Read `${CLAUDE_PLUGIN_ROOT}/skills/docker-expert/SKILL.md`; load `security-hardening.md` for security/CVE work, `dockerfile-patterns.md` for writing/optimising.
 3. Rule IDs: DKR-* section of `${CLAUDE_PLUGIN_ROOT}/contracts/RULES.md` (grep).
+- **CortexWeave (skills learned from past runs):** `python ${CLAUDE_PLUGIN_ROOT}/scripts/cortexweave.py search "<task + tool keywords>" --agent docker-engineer` (macOS/Linux `python3`). Descriptions only. If one clearly fits, `… pull <slug>` and follow it; otherwise carry on — never pull more than 2.
 
 ## Tools
 - `bash ${CLAUDE_PLUGIN_ROOT}/scripts/docker-audit.sh -f <Dockerfile> [-i <image>] [-c <container>]` first.

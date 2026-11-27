@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 HOME = Path(os.environ.get("INFRACORTEX_HOME") or Path.home() / ".infracortex")
 HUD_DIR, LEARN_DIR = HOME / "hud", HOME / "learning"
-AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex)$")
+AGENT_RE = re.compile(r"^(?:infracortex:)?(terraform-engineer|k8s-troubleshooter|docker-engineer|finops-analyst|cortex|overseer)$")
 MAX_MISTAKES, INJECT_TOP = 60, 6
 # failures that are normal control flow, not mistakes (grep/test/diff exit 1)
 BENIGN = re.compile(r"^\s*(grep|rg|test|\[|diff|cmp|command -v|which|ls)\b")
@@ -324,22 +324,52 @@ def on_fail(d: dict, agent: str) -> None:
     hud(upd)
 
 
+def weave(d: dict, agent: str, aid: str, status: str, summary: str, contract_errors: str, sev: dict) -> None:
+    """Monitor log + harvest queue for CortexWeave (the overseer turns queued runs into skills)."""
+    try:
+        sys.path.insert(0, str(HERE))
+        import cortexweave
+        task = ""
+        try:
+            task = json.loads((HUD_DIR / "state.json").read_text(encoding="utf-8"))["agents"].get(aid, {}).get("task", "")
+        except (OSError, ValueError, KeyError):
+            pass
+        cortexweave.record_run({"run_id": aid, "agent": agent, "source": source(), "status": status, "summary": summary,
+                                "project": Path(str(d.get("cwd") or ".")).name, "task": task,
+                                "contract_errors": contract_errors, "findings_by_sev": sev},
+                               transcript=d.get("agent_transcript_path"))
+    except Exception as e:  # noqa: BLE001 — never break the agent, but never hide the failure either
+        try:
+            import cortexweave
+            cortexweave.log_error(f"could not record {agent} run {aid}: {type(e).__name__}: {str(e)[:200]}")
+        except Exception:  # noqa: BLE001
+            print(f"infracortex: could not record {agent} run: {e}", file=sys.stderr)
+
+
 def on_stop(d: dict, agent: str) -> None:
     """Always finish the card with what we know. The contract gate may ask the agent to re-emit its report, but an
     agent that already handed its report back usually ends anyway — if it does continue, its next step reopens the card."""
     aid = d.get("agent_id") or agent
-    status, summary, nerr = "DONE", "", 0
+    status, summary, nerr, errs, sev = "DONE", "", 0, [], {}
     try:
         sys.path.insert(0, str(HERE))
         import contract_gate as cg
         import validate_report as vr
         doc = cg.final_report(d)   # final message, or the SubagentHandback report
-        nerr = len(vr.validate(doc).errors)
+        errs = vr.validate(doc).errors
+        nerr = len(errs)
         if isinstance(doc, dict):
             status, summary = str(doc.get("status", "DONE")), str(doc.get("summary", ""))[:140]
+            for f in doc.get("findings") or []:
+                if isinstance(f, dict):
+                    sev[str(f.get("sev"))] = sev.get(str(f.get("sev")), 0) + 1
     except Exception:  # noqa: BLE001
         status, nerr = "BLOCKED", 1
         summary = "no AgentReport found in the agent's output"
+    if agent == "overseer":  # curates memory; its output is a weave summary, not an AgentReport
+        status, nerr, errs = "DONE", 0, []
+        summary = " ".join(str(d.get("last_assistant_message") or "").split())[:140]
+    weave(d, agent, aid, status, summary, "; ".join(errs[:5]) if agent != "overseer" else "", sev)
 
     def upd(a: dict) -> None:
         e = _entry(a, aid, agent, d)

@@ -2,7 +2,7 @@
   "name": "infracortex",
   "displayName": "InfraCortex (upinclouds)",
   "description": "Terraform (Azure), Kubernetes, Docker and FinOps scanners with findings in the Problems panel, Docker build→run→diagnose, INR Azure pricing and official-icon Azure diagrams. Works with or without Claude Code.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "publisher": "upinclouds",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/nandkishor986/infracortex" },

@@ -3,6 +3,15 @@
 All notable changes are listed here. Versions follow `.claude-plugin/plugin.json`.
 
 ## [Unreleased]
+
+## [2.1.0]
+### Added
+- **CortexWeave** — shared procedural memory: hooks log every agent run (monitor log) and queue the runs worth learning from (failed steps, rejected reports, BLOCKED, very long runs); validated, versioned skill capsules (`skills/<slug>/vN.md`); `search` (descriptions only) and `pull` (full procedure) for every agent; MCP tools `search_skills`, `pull_skill`, `agent_activity` for Copilot / Claude Desktop.
+- **overseer** agent — monitors all agents' activity and weaves queued runs into CortexWeave skills (`/infracortex:weave`); shown in the HUD.
+- Every working agent searches CortexWeave at the start of a task and pulls a skill only when it fits.
+- README rewritten around usage in Claude Code and GitHub Copilot (prerequisites, quick start, configuration, troubleshooting, update/uninstall).
+- CortexWeave hardening (review of PR #7): run records redacted before storage; capsule validation detects secrets structurally (quoted JSON keys, CLI flags), provider tokens, GUIDs, AWS IDs/ARNs, public IPv4/IPv6 and dangerous steps; new skills need human approval (`/infracortex:weave review`); store lock + collision-safe writes + `repair` for interrupted saves and lost queue inserts; pending runs never dropped; bounded transcript parsing; no-match searches aren't failures; task read from the transcript; true failure totals; missing versions are errors (also over MCP); 90-day activity retention; severity mix in stats; recording failures logged visibly; `escalate_when` required.
+- Standard contribution procedure (issue → fork → branch → signed-off Conventional Commits → PR → CI → code-owner review → merge), enforced by rulesets; release tags maintainer-only; outside-contributor workflows need approval.
 ### Security
 - MCP server: `zod` 3 → 4.6.7 (fixes GHSA high: memory exhaustion validating oversized collections). Tool schemas, input validation and injection rejection re-tested.
 

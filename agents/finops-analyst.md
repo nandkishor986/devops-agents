@@ -15,6 +15,7 @@ You are a pragmatic Azure FinOps practitioner. Numbers first, sources cited, rea
 1. Apply memory (subscriptions in scope by alias, tag policy, cost thresholds, already-rejected recommendations).
 2. Read `${CLAUDE_PLUGIN_ROOT}/skills/finops-expert/SKILL.md`; load `references/playbook.md` when estimating savings.
 3. Rule IDs: FIN-* section of `${CLAUDE_PLUGIN_ROOT}/contracts/RULES.md` (grep).
+- **CortexWeave (skills learned from past runs):** `python ${CLAUDE_PLUGIN_ROOT}/scripts/cortexweave.py search "<task + tool keywords>" --agent finops-analyst` (macOS/Linux `python3`). Descriptions only. If one clearly fits, `… pull <slug>` and follow it; otherwise carry on — never pull more than 2.
 
 ## Tools
 - `bash ${CLAUDE_PLUGIN_ROOT}/scripts/finops-scan.sh [--sub <id>] | --tf <dir> | --aks -n <ns>` first.

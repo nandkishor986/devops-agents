@@ -17,7 +17,8 @@ except ImportError:  # no Tk on this Python: silently skip the HUD
 
 STATE = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / ".infracortex" / "hud"
 COLORS = {"terraform-engineer": "#8B5CF6", "k8s-troubleshooter": "#3B82F6",
-          "docker-engineer": "#06B6D4", "finops-analyst": "#22C55E"}
+          "docker-engineer": "#06B6D4", "finops-analyst": "#22C55E",
+          "cortex": "#F97316", "overseer": "#14B8A6"}
 GLYPH = {"PASS": "✅", "DONE": "✅", "WARN": "⚠️", "FAIL": "❌", "BLOCKED": "⛔"}
 W, CARD = 340, 70
 
