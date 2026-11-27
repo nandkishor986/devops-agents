@@ -39,6 +39,12 @@ Optional scanners (skipped if missing): `terraform tflint trivy checkov infracos
 
 ## Quick start
 
+**One click (recommended):** install the **InfraCortex** extension in VS Code — from the Marketplace once published, or now from a release `.vsix` (Extensions → ⋯ → *Install from VSIX…*). The *Get started* walkthrough opens and:
+1. **Install missing tools** — checks and installs Git (+ Git Bash), Python, jq and the scanners with winget / Homebrew / apt;
+2. the agents, skills and MCP tools are **already in GitHub Copilot** (Agent mode → pick an agent);
+3. **Enable in Claude Code** — one click adds the plugin, then use `/infracortex:terraform-expert …`, `/infracortex:team . review`.
+
+**Claude Code only (no VS Code):**
 ```text
 /plugin marketplace add nandkishor986/infracortex
 /plugin install infracortex@upinclouds
@@ -73,18 +79,16 @@ Try without installing: `claude --plugin-dir ./infracortex`. No marketplace: `./
 
 ## Use in GitHub Copilot (VS Code)
 
-Copilot gets the same agents as **custom agents** plus the scanners and CortexWeave as **MCP tools**.
+**With the InfraCortex extension (recommended):** nothing to configure. The extension contributes the agents (`chatAgents`), the expert skills (`chatSkills`) and the InfraCortex MCP server (`mcpServerDefinitionProviders`, run on VS Code's own Node). Open Copilot Chat → **Agent** mode → pick **terraform-engineer**, **k8s-troubleshooter**, **docker-engineer**, **finops-analyst** or **cortex** → ask, e.g. "review infra/ for security". Copilot shows each tool call with its input and output.
 
-1. **Build the MCP server** (needs Node 18+): `bash extensions/build.sh` → `dist/infracortex-<ver>.mcpb`, then unzip it to `~/.infracortex/mcp-server`.
-2. **Register it** — Command Palette → *MCP: Open User Configuration* and add:
+**Manual setup (without the extension):**
+1. Build the MCP server (Node 18+): `bash extensions/build.sh`, unzip `dist/infracortex-<ver>.mcpb` to `~/.infracortex/mcp-server`, and add it to VS Code's user `mcp.json` (Command Palette → *MCP: Open User Configuration*):
    ```json
    { "servers": { "infracortex": { "type": "stdio", "command": "node",
        "args": ["${userHome}/.infracortex/mcp-server/server/index.js"],
        "env": { "DEVOPS_WORKSPACE": "${workspaceFolder}", "DEVOPS_CURRENCY": "INR", "DEVOPS_CLIENT": "Copilot (VS Code)" } } } }
    ```
-   (Windows: also add `"DEVOPS_BASH": "C:\\Program Files\\Git\\bin\\bash.exe"` and `"DEVOPS_PYTHON": "python"`.) Start it from the MCP view or let Copilot start it on first use.
-3. **Add the agents**: `python scripts/make-copilot-agents.py` writes `terraform-engineer`, `k8s-troubleshooter`, `docker-engineer`, `finops-analyst` and `cortex` as `.agent.md` files into your VS Code user prompts folder (all workspaces) — or `--out .github/agents` to commit them into one repo for your team.
-4. **Use them**: open Copilot Chat → switch to **Agent** mode → pick e.g. **terraform-engineer** in the agent dropdown → "review infra/ for security". Copilot calls `tf_scan`, `search_skills`, … and shows each tool call with its input and output.
+2. `python scripts/make-copilot-agents.py` writes the agents into your VS Code user prompts folder (or `--out .github/agents` for one repo).
 
 MCP tools available to Copilot: `tf_scan` · `k8s_triage` · `docker_audit` · `docker_verify` · `finops_scan` · `az_price` · `azure_diagram` · `validate_report` · `check_command` · `search_skills` · `pull_skill` · `agent_activity`.
 

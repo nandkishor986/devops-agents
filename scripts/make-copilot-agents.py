@@ -37,7 +37,7 @@ def default_out() -> Path:
     return Path.home() / ".config" / "Code" / "User" / "prompts"
 
 
-def convert(src: Path) -> tuple[str, str]:
+def convert(src: Path, root: str | None = None) -> tuple[str, str]:
     text = src.read_text(encoding="utf-8")
     m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
     if not m:
@@ -45,7 +45,7 @@ def convert(src: Path) -> tuple[str, str]:
     fm, body = m.groups()
     name = re.search(r"^name:\s*(.+)$", fm, re.M).group(1).strip()
     desc = re.search(r"^description:\s*(.+)$", fm, re.M).group(1).strip()
-    body = body.replace("${CLAUDE_PLUGIN_ROOT}", ROOT.as_posix())
+    body = body.replace("${CLAUDE_PLUGIN_ROOT}", root or ROOT.as_posix())
     used = sorted({t for s, t in TOOLS.items() if s in body})
     head = f"---\nname: {name}\ndescription: {desc!r}\n---\n\n"
     return name, head + NOTE.format(tools=", ".join(f"`{t}`" for t in used) or "tf_scan, k8s_triage, …") + body
@@ -54,10 +54,16 @@ def convert(src: Path) -> tuple[str, str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=None)
-    out = ap.parse_args().out or default_out()
+    ap.add_argument("--root", default=None, help="path written for ${CLAUDE_PLUGIN_ROOT} (default: this repo); the VS Code build uses a placeholder")
+    ap.add_argument("--exclude", default="", help="comma-separated agent names to skip")
+    a = ap.parse_args()
+    out = a.out or default_out()
     out.mkdir(parents=True, exist_ok=True)
+    skip = {x for x in a.exclude.split(",") if x}
     for src in sorted((ROOT / "agents").glob("*.md")):
-        name, doc = convert(src)
+        if src.stem in skip:
+            continue
+        name, doc = convert(src, a.root)
         (out / f"{name}.agent.md").write_text(doc, encoding="utf-8")
         print(out / f"{name}.agent.md")
     return 0

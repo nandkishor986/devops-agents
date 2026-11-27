@@ -1,20 +1,57 @@
 {
   "name": "infracortex",
-  "displayName": "InfraCortex (upinclouds)",
-  "description": "Terraform (Azure), Kubernetes, Docker and FinOps scanners with findings in the Problems panel, Docker build→run→diagnose, INR Azure pricing and official-icon Azure diagrams. Works with or without Claude Code.",
-  "version": "2.1.0",
+  "displayName": "InfraCortex — DevOps AI agents for Copilot & Claude Code",
+  "description": "One-click DevOps agents: Terraform (Azure/AWS), Kubernetes, Docker and FinOps experts in GitHub Copilot and Claude Code, with security scanners, a destructive-command guard, self-learning skill memory (CortexWeave) and Azure diagrams.",
+  "version": "3.0.0",
   "publisher": "upinclouds",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": { "color": "#14161B", "theme": "dark" },
   "repository": { "type": "git", "url": "https://github.com/nandkishor986/infracortex" },
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Linters", "Other"],
-  "keywords": ["terraform", "azure", "kubernetes", "docker", "finops", "devsecops"],
+  "bugs": { "url": "https://github.com/nandkishor986/infracortex/issues" },
+  "homepage": "https://github.com/nandkishor986/infracortex#readme",
+  "engines": { "vscode": "^1.101.0" },
+  "categories": ["AI", "Chat", "Linters", "Other"],
+  "keywords": ["terraform", "azure", "aws", "kubernetes", "docker", "finops", "devops", "copilot", "claude", "mcp", "agents", "devsecops"],
   "main": "./src/extension.js",
-  "activationEvents": [],
+  "activationEvents": ["onStartupFinished"],
   "contributes": {
+    "chatAgents": [
+      { "name": "terraform-engineer", "description": "Terraform engineer for Azure and AWS: review, write, refactor and debug .tf, state and IaC pipelines with security baselines.", "path": "./agents/terraform-engineer.agent.md" },
+      { "name": "k8s-troubleshooter", "description": "Kubernetes/AKS troubleshooter: CrashLoop, Pending, OOMKilled, ImagePull, networking, RBAC; reviews and writes manifests.", "path": "./agents/k8s-troubleshooter.agent.md" },
+      { "name": "docker-engineer", "description": "Docker and container-security expert: Dockerfiles, Compose, image size, CVEs, hardening, build → run → verify.", "path": "./agents/docker-engineer.agent.md" },
+      { "name": "finops-analyst", "description": "Azure/AWS FinOps analyst: waste, rightsizing, Infracost diffs, price lookups. Read-only.", "path": "./agents/finops-analyst.agent.md" },
+      { "name": "cortex", "description": "All-in-one DevOps agent combining Terraform, Kubernetes, Docker and FinOps for cross-domain tasks.", "path": "./agents/cortex.agent.md" }
+    ],
+    "chatSkills": [
+      { "path": "./skills/terraform-expert/SKILL.md" },
+      { "path": "./skills/k8s-expert/SKILL.md" },
+      { "path": "./skills/docker-expert/SKILL.md" },
+      { "path": "./skills/finops-expert/SKILL.md" },
+      { "path": "./skills/azure-diagrams/SKILL.md" }
+    ],
+    "mcpServerDefinitionProviders": [ { "id": "infracortex", "label": "InfraCortex" } ],
+    "walkthroughs": [
+      {
+        "id": "infracortex.setup",
+        "title": "Get started with InfraCortex",
+        "description": "Three clicks: tools, Claude Code, then pick an agent.",
+        "steps": [
+          { "id": "prereqs", "title": "Check and install prerequisites", "description": "Finds Git/Git Bash, Python, jq and the DevOps scanners (terraform, tflint, trivy, hadolint, kubectl, az, docker).\n[Check prerequisites](command:infracortex.checkPrereqs)\n[Install missing tools](command:infracortex.installPrereqs)", "media": { "markdown": "media/walkthrough/prereqs.md" }, "completionEvents": ["onCommand:infracortex.checkPrereqs", "onCommand:infracortex.installPrereqs"] },
+          { "id": "copilot", "title": "Use the agents in GitHub Copilot", "description": "The agents, skills and MCP tools are already registered. Open Copilot Chat in Agent mode and pick an agent.\n[Open Copilot Chat](command:infracortex.openCopilotAgent)", "media": { "markdown": "media/walkthrough/copilot.md" }, "completionEvents": ["onCommand:infracortex.openCopilotAgent"] },
+          { "id": "claude", "title": "Enable in Claude Code (one click)", "description": "Adds the InfraCortex plugin to Claude Code: subagents with memory, the safety guard, self-learning and the live HUD.\n[Enable in Claude Code](command:infracortex.enableClaude)", "media": { "markdown": "media/walkthrough/claude-code.md" }, "completionEvents": ["onCommand:infracortex.enableClaude"] },
+          { "id": "scan", "title": "Optional: one-click scans", "description": "Right-click a folder or Dockerfile for scans that put findings in the Problems panel — no AI, no tokens.", "media": { "markdown": "media/walkthrough/scan.md" } }
+        ]
+      }
+    ],
     "viewsContainers": { "activitybar": [ { "id": "devopsAgents", "title": "InfraCortex", "icon": "$(server-process)" } ] },
     "views": { "devopsAgents": [ { "id": "devopsAgents.actions", "name": "Actions" } ] },
     "commands": [
+      { "command": "infracortex.getStarted", "title": "Get Started", "category": "InfraCortex" },
+      { "command": "infracortex.checkPrereqs", "title": "Check Prerequisites", "category": "InfraCortex" },
+      { "command": "infracortex.installPrereqs", "title": "Install Missing Tools", "category": "InfraCortex" },
+      { "command": "infracortex.enableClaude", "title": "Enable in Claude Code", "category": "InfraCortex" },
+      { "command": "infracortex.openCopilotAgent", "title": "Open Copilot Chat with an Agent", "category": "InfraCortex" },
       { "command": "devopsAgents.tfScan", "title": "Terraform: Scan Folder", "category": "InfraCortex" },
       { "command": "devopsAgents.tfCost", "title": "Terraform: Cost (Infracost)", "category": "InfraCortex" },
       { "command": "devopsAgents.k8sManifests", "title": "Kubernetes: Review Manifests", "category": "InfraCortex" },
@@ -47,7 +84,8 @@
         "devopsAgents.defaultRegion": { "type": "string", "default": "eastus2", "description": "Default Azure region for price lookups." },
         "devopsAgents.bashPath": { "type": "string", "default": "", "description": "Path to bash (Windows: Git Bash). Empty = auto-detect." },
         "devopsAgents.pythonPath": { "type": "string", "default": "", "description": "Python command. Empty = python (Windows) / python3." },
-        "devopsAgents.terraformInit": { "type": "boolean", "default": false, "description": "Run terraform init -backend=false before validate (downloads providers)." }
+        "devopsAgents.terraformInit": { "type": "boolean", "default": false, "description": "Run terraform init -backend=false before validate (downloads providers)." },
+        "devopsAgents.installOptionalTools": { "type": "boolean", "default": false, "description": "Also install optional tools (Docker Desktop, Infracost) with 'Install Missing Tools'." }
       }
     }
   }
